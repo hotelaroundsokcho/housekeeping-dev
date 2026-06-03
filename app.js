@@ -502,7 +502,7 @@ if(n)calls.push(api({action:'addRoomNote',roomNo:S.room.roomNo,sender:S.name,rol
 await Promise.all(calls);
 if(S.role==='admin'&&prevStatus==='inspection'&&S.status==='vacant'&&S.room.maidName){
 await api({action:'sendChat',sender:'관리자',role:'admin',
-message:'✅ '+S.room.roomNo+'호 점검 통과! 공실완료 정체되었습니다. ('+S.room.maidName+' 님 수고하셨습니다 👍)'});
+message:'✅ '+S.room.roomNo+'호 점검 통과 / Inspection Passed! 공실완료 / Vacant, 체크인 준비완료 / Ready for Check-in. ('+S.room.maidName+' 님 수고하셨습니다 👍)'});
 }
 await loadRooms(true);hideLoad();
 $('roomModal').classList.remove('open');toast('✅ 저장완료');
