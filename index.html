@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>객실정비 | Hotel Around Sokcho</title>
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;--accent:#6c8fff;--text:#e8eaf0;--text2:#8b91a8;--occupied:#f472b6;--uncleaned:#ef4444;--cleaning:#f59e0b;--inspection:#e2e8f0;--vacant:#4ade80;--broken:#ff6b35;--radius:12px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif;min-height:100vh;font-size:16px;}
+#loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.logo{text-align:center;margin-bottom:40px;}
+.logo h1{font-size:22px;font-weight:700;}
+.logo p{color:var(--text2);font-size:12px;margin-top:4px;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;}
+.tab-row{display:flex;gap:8px;margin-bottom:24px;}
+.tab-btn{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;}
+.form-group input{width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;outline:none;}
+.btn-primary{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;}
+.error-msg{color:var(--uncleaned);font-size:12px;text-align:center;margin-top:10px;min-height:16px;}
+#app{display:none;flex-direction:column;min-height:100vh;}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.app-title{font-size:15px;font-weight:700;}
+.sub{font-size:11px;color:var(--text2);}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;}
+.nav-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);}
+.nav-tab{flex:1;padding:12px 4px;text-align:center;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.content{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.stats-row-top{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 6px;text-align:center;}
+.stat-num{font-size:24px;font-weight:700;}
+.stat-label{font-size:12px;color:var(--text2);margin-top:2px;}
+.s-occupied .stat-num{color:var(--occupied);}
+.s-uncleaned .stat-num{color:var(--uncleaned);}
+.s-cleaning .stat-num{color:var(--cleaning);}
+.s-inspection .stat-num{color:var(--inspection);}
+.s-broken .stat-num{color:var(--broken);}
+.s-vacant .stat-num{color:var(--vacant);}
+.maid-stats-section{margin-bottom:14px;}
+.maid-stats-title{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.maid-stats-grid{display:flex;flex-direction:column;gap:8px;}
+.maid-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.maid-stat-name{font-size:15px;font-weight:600;margin-bottom:6px;}
+.maid-stat-numbers{display:flex;gap:10px;align-items:center;margin-bottom:6px;}
+.maid-stat-done{font-size:12px;color:var(--vacant);font-weight:600;}
+.maid-stat-wip{font-size:12px;color:var(--cleaning);font-weight:600;}
+.maid-stat-total{font-size:11px;color:var(--text2);}
+.maid-stat-bar-wrap{background:var(--surface2);border-radius:4px;height:5px;overflow:hidden;margin-bottom:4px;}
+.maid-stat-bar{height:100%;background:var(--vacant);border-radius:4px;transition:width .4s ease;}
+.maid-stat-pct{font-size:10px;color:var(--text2);}
+.filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.filter-btn{padding:6px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;}
+.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.select-mode-btn{width:100%;padding:11px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--occupied);border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:10px;}
+.reset-btn{width:100%;padding:11px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--uncleaned);border-radius:var(--radius);font-size:13px;cursor:pointer;margin-bottom:10px;}
+.change-pin-btn{width:100%;padding:10px;background:rgba(108,143,255,.1);border:1px solid rgba(108,143,255,.3);color:var(--accent);border-radius:var(--radius);font-size:13px;cursor:pointer;margin-bottom:16px;}
+.maid-mgmt-btn{width:100%;padding:10px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);color:var(--vacant);border-radius:var(--radius);font-size:13px;cursor:pointer;margin-bottom:10px;}
+.bulk-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;z-index:150;align-items:center;justify-content:space-between;gap:12px;}.select-all-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;}
+.bulk-count{font-size:13px;color:var(--text2);font-weight:600;}
+.bulk-btn{flex:1;padding:13px;background:var(--uncleaned);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
+.bulk-btn:disabled{opacity:.4;cursor:not-allowed;}
+.rooms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+@media(min-width:600px){.rooms-grid{grid-template-columns:repeat(3,1fr);}}
+.room-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .15s;}
+.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.room-card.occupied::before{background:var(--occupied);}
+.room-card.uncleaned::before{background:var(--uncleaned);}
+.room-card.cleaning::before{background:var(--cleaning);}
+.room-card.inspection::before{background:var(--inspection);}
+.room-card.vacant::before{background:var(--vacant);}
+.room-card.broken::before{background:var(--broken);}
+.room-card.card-selected{border-color:var(--uncleaned);box-shadow:0 0 0 2px rgba(239,68,68,.3);}
+.card-check{font-size:18px;position:absolute;top:8px;right:10px;color:var(--uncleaned);}
+.room-no{font-size:24px;font-weight:700;}
+.room-type-row{display:flex;align-items:center;gap:5px;margin-top:2px;}
+.room-type{font-size:13px;color:var(--text2);}
+.bed-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.03em;line-height:1.6;}
+.bed-twin{background:rgba(168,85,247,.18);color:#c084fc;border:1px solid rgba(168,85,247,.35);}
+.bed-double{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.35);}
+.room-status{display:inline-block;margin-top:8px;padding:3px 8px;border-radius:20px;font-size:13px;font-weight:600;}
+.status-occupied{background:rgba(244,114,182,.18);color:var(--occupied);}
+.status-uncleaned{background:rgba(239,68,68,.15);color:var(--uncleaned);}
+.status-cleaning{background:rgba(245,158,11,.15);color:var(--cleaning);}
+.status-inspection{background:rgba(226,232,240,.12);color:var(--inspection);}
+.status-broken{background:rgba(255,107,53,.18);color:var(--broken);}
+.status-vacant{background:rgba(74,222,128,.15);color:var(--vacant);}
+.room-maid{font-size:13px;color:var(--text2);margin-top:4px;}
+.room-maid-badge{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:var(--text2);}
+.maid-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text2);flex-shrink:0;}
+.room-time{font-size:11px;color:var(--text2);margin-top:3px;opacity:.75;}
+.room-card.assigned-0 { border-color: #06b6d4; box-shadow: 0 0 0 1.5px rgba(6,182,212,.35); }
+.room-card.assigned-0::before { background: #06b6d4 !important; }
+.room-card.assigned-0 .room-maid { color: #06b6d4; font-weight:600; }
+.room-card.assigned-1 { border-color: #a78bfa; box-shadow: 0 0 0 1.5px rgba(167,139,250,.35); }
+.room-card.assigned-1::before { background: #a78bfa !important; }
+.room-card.assigned-1 .room-maid { color: #a78bfa; font-weight:600; }
+.room-card.assigned-2 { border-color: #fb923c; box-shadow: 0 0 0 1.5px rgba(251,146,60,.35); }
+.room-card.assigned-2::before { background: #fb923c !important; }
+.room-card.assigned-2 .room-maid { color: #fb923c; font-weight:600; }
+.room-card.assigned-3 { border-color: #f472b6; box-shadow: 0 0 0 1.5px rgba(244,114,182,.35); }
+.room-card.assigned-3::before { background: #f472b6 !important; }
+.room-card.assigned-3 .room-maid { color: #f472b6; font-weight:600; }
+.room-card.assigned-4 { border-color: #facc15; box-shadow: 0 0 0 1.5px rgba(250,204,21,.35); }
+.room-card.assigned-4::before { background: #facc15 !important; }
+.room-card.assigned-4 .room-maid { color: #facc15; font-weight:600; }
+.notif-bar{display:none;position:fixed;top:0;left:0;right:0;background:#1e293b;border-bottom:2px solid var(--accent);padding:10px 16px;z-index:500;font-size:12px;color:var(--text);align-items:center;justify-content:space-between;gap:10px;}
+.notif-bar.show{display:flex;}
+.notif-allow-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.notif-dismiss-btn{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:0 4px;}
+.admin-name-select{display:none;margin-top:16px;}
+.admin-name-select label{display:block;font-size:12px;color:var(--text2);margin-bottom:8px;}
+.admin-name-btns{display:flex;gap:8px;}
+.admin-name-btn{flex:1;padding:12px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;}
+.admin-name-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:4px;}
+.room-type-lg{font-size:12px;color:var(--text2);margin-bottom:20px;}
+.modal-section{margin-bottom:20px;}
+.modal-section label{display:block;font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600;}
+.status-btns-top{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px;}
+.status-btns-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.status-btn{padding:12px 6px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;text-align:center;line-height:1.4;}
+.status-btn.sel-occupied{border-color:var(--occupied);background:rgba(59,130,246,.15);color:var(--occupied);}
+.status-btn.sel-uncleaned{border-color:var(--uncleaned);background:rgba(239,68,68,.15);color:var(--uncleaned);}
+.status-btn.sel-cleaning{border-color:var(--cleaning);background:rgba(245,158,11,.15);color:var(--cleaning);}
+.status-btn.sel-inspection{border-color:var(--inspection);background:rgba(168,85,247,.15);color:var(--inspection);}
+.status-btn.sel-vacant{border-color:var(--vacant);background:rgba(74,222,128,.15);color:var(--vacant);}
+.status-btn.sel-broken{border-color:var(--broken);background:rgba(255,107,53,.18);color:var(--broken);}.status-btn small{display:block;font-size:10px;font-weight:400;opacity:.8;margin-top:2px;}
+.maid-input,.note-input{width:100%;padding:11px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;}
+.note-input{resize:none;height:80px;}
+.modal-save-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;}
+.notes-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;}
+.note-item{background:var(--surface2);border-radius:8px;padding:10px 12px;font-size:14px;}
+.note-meta{color:var(--text2);font-size:12px;margin-bottom:4px;}
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 110px);}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.chat-bubble{max-width:75%;padding:10px 14px;border-radius:16px;font-size:15px;line-height:1.5;}
+.chat-bubble.mine{background:var(--accent);color:#fff;align-self:flex-end;}
+.chat-bubble.other{background:var(--surface2);color:var(--text);align-self:flex-start;}
+.chat-sender{font-size:12px;color:var(--text2);margin-bottom:3px;}
+.chat-time{font-size:10px;opacity:.6;margin-top:4px;}
+.chat-input-row{padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;}
+.chat-input-row input{flex:1;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:24px;color:var(--text);font-size:14px;outline:none;}
+.chat-send-btn{padding:11px 18px;background:var(--accent);color:#fff;border:none;border-radius:24px;font-size:13px;font-weight:600;cursor:pointer;}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:flex;align-items:center;justify-content:center;}
+.loading-box{background:var(--surface);border-radius:16px;padding:28px 32px;text-align:center;}
+.loading-box p{margin-top:12px;font-size:13px;color:var(--text2);}
+.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:24px;font-size:13px;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+.pin-modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;}
+.pin-input{width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;outline:none;margin-bottom:12px;}
+.pin-save-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;}
+.pin-cancel-btn{width:100%;padding:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:10px;font-size:14px;cursor:pointer;margin-top:8px;}
+.maid-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:8px;}
+.maid-row-name{font-size:13px;color:var(--text);}
+.maid-del-btn{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--uncleaned);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;}
+.maid-add-row{display:flex;gap:8px;margin-top:14px;}
+.maid-add-input{flex:1;padding:11px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;}
+.maid-add-btn{padding:11px 16px;background:var(--vacant);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;}
+.pin-error{color:var(--uncleaned);font-size:12px;text-align:center;margin-bottom:10px;min-height:16px;}
+
+.assign-mode-btn{width:100%;padding:11px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:10px;}
+.bulk-assign-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;z-index:150;flex-direction:column;gap:8px;}
+.bulk-assign-top{display:flex;align-items:center;justify-content:space-between;}
+.assign-count{font-size:13px;color:var(--text2);font-weight:600;}
+.assign-maid-btns{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── 업무일지 모달 ── */
+.report-btn{width:100%;padding:10px;background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.3);color:#facc15;border-radius:var(--radius);font-size:13px;cursor:pointer;margin-bottom:10px;}
+.report-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px;}
+.report-modal-overlay.open{display:flex;}
+.report-modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:420px;padding:24px;max-height:90vh;overflow-y:auto;}
+.report-modal h3{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--text);}
+.report-date-row{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.report-date-row label{font-size:12px;color:var(--text2);}
+.report-date-input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:13px;flex:1;min-width:120px;}
+.report-btn-row{display:flex;gap:8px;margin-top:4px;}
+.report-dl-btn{flex:1;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;}
+.report-cancel-btn{padding:12px 16px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:14px;cursor:pointer;}
+
+/* ── 일괄 상태변경 바 ── */
+.bulk-bar{flex-direction:column;gap:8px;padding:12px 14px;}
+.bulk-bar-top{display:flex;align-items:center;justify-content:center;}<button id="selectAllBtn" class="select-all-btn" onclick="selectAllVisible()" style="display:none">현재 화면 전체선택</button>
+.bulk-status-btns{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
+.bulk-status-btn{flex:1 1 calc(33% - 7px);min-width:80px;padding:9px 6px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.bulk-s-occupied{background:rgba(244,114,182,.25);color:#f9a8d4;}
+.bulk-s-uncleaned{background:rgba(239,68,68,.25);color:#fca5a5;}
+.bulk-s-cleaning{background:rgba(245,158,11,.25);color:#fde68a;}
+.bulk-s-inspection{background:rgba(148,163,184,.2);color:#e2e8f0;}
+.bulk-s-vacant{background:rgba(74,222,128,.2);color:#86efac;}
+.bulk-s-broken{background:rgba(255,107,53,.25);color:#fdba74;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div id="loginScreen">
+<div class="logo"><h1>🏨 Hotel Around Sokcho</h1><p>Housekeeping Management System</p></div>
+<div class="login-card">
+<div class="tab-row">
+<button class="tab-btn active" onclick="switchTab('admin')">관리자 Admin</button>
+<button class="tab-btn" onclick="switchTab('maid')">메이드 Maid</button>
+</div>
+<div id="adminForm">
+<div class="form-group"><label>PIN 번호</label>
+<input type="password" id="pinInput" maxlength="8" inputmode="numeric" placeholder="● ● ● ●" onkeydown="if(event.key==='Enter')login()">
+</div>
+<button class="btn-primary" onclick="login()">로그인</button>
+<div class="admin-name-select" id="adminNameSelect">
+  <label>관리자 이름을 선택하세요</label>
+  <div class="admin-name-btns">
+    <button class="admin-name-btn" id="nameBtn0" onclick="selectAdminName(0)">장경순</button>
+    <button class="admin-name-btn" id="nameBtn1" onclick="selectAdminName(1)">박지연</button>
+  </div>
+</div>
+</div>
+<div id="maidForm" style="display:none">
+<div class="form-group"><label>이름 입력</label>
+<input type="text" id="maidNameInput" placeholder="등록된 이름 입력" onkeydown="if(event.key==='Enter')loginMaid()">
+</div>
+<button class="btn-primary" onclick="loginMaid()">입장하기</button>
+</div>
+<div class="error-msg" id="loginError"></div>
+</div>
+</div>
+<div class="notif-bar" id="notifBar">
+  <span>🔔 새 메시지 알림을 받으시겠어요?</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="notif-allow-btn" onclick="requestNotifPermission()">알림 허용</button>
+    <button class="notif-dismiss-btn" onclick="document.getElementById('notifBar').classList.remove('show')">✕</button>
+  </div>
+</div>
+<div id="app">
+<div class="app-header">
+<div><div class="app-title">🏨 객실정비 현황</div><div class="sub" id="headerSub"></div></div>
+<button class="logout-btn" onclick="logout()">로그아웃</button>
+</div>
+<div class="nav-tabs">
+<div class="nav-tab active" onclick="showTab('rooms')">🏠 객실현황</div>
+<div class="nav-tab" onclick="showTab('chat')">💬 채팅</div>
+</div>
+<div id="tabRooms" class="content">
+<div class="stats-row" style="margin-bottom:8px">
+<div class="stat-card s-occupied"><div class="stat-num" id="cnt0">0</div><div class="stat-label">💗 재실 / Occupied</div></div>
+<div class="stat-card s-uncleaned"><div class="stat-num" id="cnt1">0</div><div class="stat-label">🔴 미정비 / Uncleaned</div></div>
+<div class="stat-card s-cleaning"><div class="stat-num" id="cnt2">0</div><div class="stat-label">🟡 정비중 / Cleaning</div></div>
+</div>
+<div class="stats-row">
+<div class="stat-card s-inspection"><div class="stat-num" id="cnt3">0</div><div class="stat-label">◻️ 인스펙션 / Inspection</div></div>
+<div class="stat-card s-vacant"><div class="stat-num" id="cnt4">0</div><div class="stat-label">🟢 공실완료 / Vacant</div></div>
+<div class="stat-card s-broken"><div class="stat-num" id="cnt5">0</div><div class="stat-label">🔶 고장 / Broken</div></div>
+</div>
+<div class="maid-stats-section" id="maidStatsSection" style="display:none">
+<div class="maid-stats-title">👥 메이드별 현황</div>
+<div class="maid-stats-grid" id="maidStatsGrid"></div>
+</div>
+<div class="filter-row">
+<button class="filter-btn active" data-filter="all" onclick="setFilter('all')">전체 / All</button>
+<button class="filter-btn" data-filter="occupied" onclick="setFilter('occupied')">🔵 재실 / Occupied</button>
+<button class="filter-btn" data-filter="uncleaned" onclick="setFilter('uncleaned')">🔴 미정비 / Uncleaned</button>
+<button class="filter-btn" data-filter="cleaning" onclick="setFilter('cleaning')">🟡 정비중 / Cleaning</button>
+<button class="filter-btn" data-filter="inspection" onclick="setFilter('inspection')">🟣 인스펙션 / Inspection</button>
+<button class="filter-btn" data-filter="vacant" onclick="setFilter('vacant')">💙 공실완료 / Vacant</button>
+<button class="filter-btn" data-filter="broken" onclick="setFilter('broken')">🔶 고장 / Broken</button>
+</div>
+<button class="select-mode-btn" id="selectModeBtn" style="display:none" onclick="toggleSelectMode()">☑ 객실 선택 (일괄 상태변경)</button>
+<button class="assign-mode-btn" id="assignModeBtn" style="display:none" onclick="toggleAssignMode()">👤 메이드 일괄 배정</button>
+<button class="reset-btn" id="resetBtn" style="display:none" onclick="confirmReset()">⚠️ 전체 초기화 (긴급용)</button>
+<button class="maid-mgmt-btn" id="maidMgmtBtn" style="display:none" onclick="openMaidMgmtModal()">👥 메이드 명단 관리</button>
+<button class="change-pin-btn" id="changePinBtn" style="display:none" onclick="openChangePinModal()">🔑 관리자 PIN 변경</button>
+<div class="rooms-grid" id="roomsGrid"></div>
+<div id="reportBtn" style="display:none"><button class="report-btn" onclick="openReportModal()">📋 업무일지 다운로드</button></div>
+</div>
+<div id="tabChat" style="display:none">
+<div class="chat-wrap">
+<div class="chat-msgs" id="chatMsgs"></div>
+<div class="chat-input-row">
+<input type="text" id="chatInput" placeholder="메시지 입력..." onkeydown="if(event.key==='Enter')sendMsg()">
+<button class="chat-send-btn" onclick="sendMsg()">전송</button>
+</div>
+</div>
+</div>
+</div>
+<div class="bulk-bar" id="bulkBar">
+<div class="bulk-bar-top"><span class="bulk-count" id="bulkCount">0개 선택됨</span></div>
+<div class="bulk-status-btns">
+<button class="bulk-status-btn bulk-s-occupied" onclick="bulkSetStatus('occupied')" disabled>💗 재실</button>
+<button class="bulk-status-btn bulk-s-uncleaned" onclick="bulkSetStatus('uncleaned')" disabled>🔴 미정비</button>
+<button class="bulk-status-btn bulk-s-cleaning" onclick="bulkSetStatus('cleaning')" disabled>🟡 정비중</button>
+<button class="bulk-status-btn bulk-s-inspection" onclick="bulkSetStatus('inspection')" disabled>⚪ 인스펙션</button>
+<button class="bulk-status-btn bulk-s-vacant" onclick="bulkSetStatus('vacant')" disabled>🟢 공실완료</button>
+<button class="bulk-status-btn bulk-s-broken" onclick="bulkSetStatus('broken')" disabled>🔶 고장</button>
+</div>
+</div>
+<div class="bulk-assign-bar" id="bulkAssignBar">
+<div class="bulk-assign-top"><span class="assign-count" id="assignCount">0개 객실 선택됨</span><span style="font-size:11px;color:var(--text2)">객실 선택 후 메이드 버튼 클릭</span></div>
+<div class="assign-maid-btns" id="assignMaidBtns"></div>
+</div>
+<div class="modal-overlay" id="roomModal" onclick="closeModal(event)">
+<div class="modal">
+<div class="modal-handle"></div>
+<h3 id="mRoomNo"></h3>
+<div class="room-type-lg" id="mRoomType"></div>
+<div class="modal-section"><label>상태 변경 / Change Status</label>
+<div class="status-btns-row">
+<button class="status-btn status-btn-admin" onclick="selStatus('occupied')">🩷 재실<br><small>Occupied</small></button>
+<button class="status-btn status-btn-admin" onclick="selStatus('uncleaned')">🔴 미정비<br><small>Uncleaned</small></button>
+<button class="status-btn status-btn-admin" onclick="selStatus('broken')">🔶 고장<br><small>Broken</small></button>
+</div>
+<div class="status-btns-row">
+<button class="status-btn" onclick="selStatus('cleaning')">🟡 정비중<br><small>Cleaning</small></button>
+<button class="status-btn" onclick="selStatus('inspection')">⬜ 인스펙션필요<br><small>Inspection</small></button>
+<button class="status-btn status-btn-admin" onclick="selStatus('vacant')">🟢 공실완료<br><small>Vacant</small></button>
+</div>
+</div>
+<div class="modal-section" id="maidSec"><label>메이드 배정 (관리자)</label><input type="text" class="maid-input" id="maidInput" placeholder="메이드 이름"></div>
+<div class="modal-section"><label>메모 추가</label><textarea class="note-input" id="noteInput" placeholder="특이사항..."></textarea></div>
+<div class="modal-section"><label>메모 이력</label><div class="notes-list" id="notesList"></div></div>
+<div class="notes-section" style="margin-top:14px"><div class="notes-label" style="font-size:13px;color:var(--text2);margin-bottom:6px">변경 이력 / History</div><div id="historyList"></div></div>
+<button class="modal-save-btn" onclick="saveRoom()">저장</button>
+</div>
+</div>
+<div class="modal-overlay" id="maidMgmtModal" onclick="closeMaidMgmtModal(event)">
+<div class="pin-modal">
+<div class="modal-handle"></div>
+<h3 style="margin-bottom:6px">👥 메이드 명단 관리</h3>
+<p style="font-size:11px;color:var(--text2);margin-bottom:18px">등록된 이름만 로그인 가능합니다</p>
+<div id="maidMgmtList"></div>
+<div class="maid-add-row">
+<input type="text" class="maid-add-input" id="newMaidInput" placeholder="새 메이드 이름" onkeydown="if(event.key==='Enter')addMaid()">
+<button class="maid-add-btn" onclick="addMaid()">추가</button>
+</div>
+<button class="pin-cancel-btn" style="margin-top:16px" onclick="closeMaidMgmtModal()">닫기</button>
+</div>
+</div>
+<div class="modal-overlay" id="changePinModal" onclick="closeChangePinModal(event)">
+<div class="pin-modal">
+<div class="modal-handle"></div>
+<h3 style="margin-bottom:20px">🔑 관리자 PIN 변경</h3>
+<div class="form-group"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">현재 PIN</label>
+<input type="password" class="pin-input" id="cpCurrent" inputmode="numeric" placeholder="현재 PIN 입력"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">새 PIN (숫자 4자리 이상)</label>
+<input type="password" class="pin-input" id="cpNew" inputmode="numeric" placeholder="새 PIN 입력"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">새 PIN 확인</label>
+<input type="password" class="pin-input" id="cpConfirm" inputmode="numeric" placeholder="새 PIN 재입력" onkeydown="if(event.key==='Enter')savePin()"></div>
+<div class="pin-error" id="cpError"></div>
+<button class="pin-save-btn" onclick="savePin()">변경하기</button>
+<button class="pin-cancel-btn" onclick="closeChangePinModal()">취소</button>
+</div>
+</div>
+
+<div class="report-modal-overlay" id="reportModal">
+<div class="report-modal">
+  <h3>📋 업무일지 다운로드</h3>
+  <div class="report-date-row">
+    <label>시작일</label>
+    <input type="date" class="report-date-input" id="reportFrom">
+    <label>종료일</label>
+    <input type="date" class="report-date-input" id="reportTo">
+  </div>
+  <div class="report-btn-row">
+    <button class="report-dl-btn" onclick="downloadReport()">⬇ 엑셀 다운로드</button>
+    <button class="report-cancel-btn" onclick="closeReportModal()">취소</button>
+  </div>
+</div>
+</div>
+<div class="loading-overlay" id="loadingOv" style="display:none"><div class="loading-box"><div class="spinner"></div><p id="loadingMsg">처리 중...</p></div></div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
