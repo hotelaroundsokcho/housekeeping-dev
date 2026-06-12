@@ -503,6 +503,7 @@ await Promise.all(calls);
 if(S.role==='admin'&&prevStatus==='inspection'&&S.status==='vacant'&&S.room.maidName){
 await api({action:'sendChat',sender:'관리자',role:'admin',
 message:'✅ '+S.room.roomNo+'호 점검 통과 / Inspection Passed! 공실완료 / Vacant, 체크인 준비완료 / Ready for Check-in. ('+S.room.maidName+' 님 수고하셨습니다 👍)'});
+await api({action:'assignMaid',roomNo:S.room.roomNo,maidName:''});
 }
 await loadRooms(true);hideLoad();
 $('roomModal').classList.remove('open');toast('✅ 저장완료');
