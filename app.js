@@ -114,7 +114,7 @@ document.querySelectorAll('.admin-name-btn').forEach(b=>b.classList.remove('acti
 async function go(){
 $('loginScreen').style.display='none';$('app').style.display='flex';
 $('headerSub').textContent=S.role==='admin'?'관리자 모드':S.name+' 님';
-['resetBtn','maidSec','changePinBtn','maidMgmtBtn','reportBtn','maidStatsSection','selectModeBtn','assignModeBtn'].forEach(id=>{
+['resetBtn','maidSec','changePinBtn','maidMgmtBtn','inspectorMgmtBtn','reportBtn','maidStatsSection','selectModeBtn','assignModeBtn'].forEach(id=>{
 const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 });
 showLoad('로딩 중...');
@@ -686,4 +686,42 @@ const fname='HK_업무일지_'+from+(from!==to?'~'+to:'')+'.xlsx';
 XLSX.writeFile(wb,fname);
 hideLoad();closeReportModal();toast('✅ 다운로드 완료');
 }catch(e){hideLoad();toast('오류: '+e.message);}
+}
+
+async function openInspectorModal(){
+  const box=$('inspectorList');
+  if(box)box.innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';
+  $('inspectorModal').classList.add('open');
+  await refreshInspectorList();
+}
+function closeInspectorModal(e){
+  if(!e||e.target.id==='inspectorModal')$('inspectorModal').classList.remove('open');
+}
+async function refreshInspectorList(){
+  const r=await api({action:'getInspectors'});
+  const rm=await api({action:'getMaids'});
+  const box=$('inspectorList');
+  if(!box)return;
+  const inspectors=r.ok?(r.inspectors||[]):[];
+  const maids=rm.ok?(rm.maids||[]):[];
+  if(!maids.length){box.innerHTML='<div style="color:var(--text2);font-size:12px">등록된 메이드 없음</div>';return;}
+  box.innerHTML='';
+  maids.forEach(function(name){
+    const isIns=inspectors.map(n=>n.toLowerCase()).includes(name.toLowerCase());
+    const row=document.createElement('div');
+    row.className='maid-row';
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)';
+    row.innerHTML='<span style="font-size:14px">👤 '+esc(name)+'</span>';
+    const tog=document.createElement('button');
+    tog.style.cssText='padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;background:'+(isIns?'var(--vacant)':'var(--surface2)')+';color:'+(isIns?'#000':'var(--text2)');
+    tog.textContent=isIns?'ON ✓':'OFF';
+    tog.onclick=async function(){
+      showLoad('저장 중...');
+      await api({action:'setInspector',maidName:name,enable:!isIns});
+      hideLoad();
+      await refreshInspectorList();
+    };
+    row.appendChild(tog);
+    box.appendChild(row);
+  });
 }
