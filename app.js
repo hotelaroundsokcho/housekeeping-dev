@@ -695,7 +695,13 @@ hideLoad();closeReportModal();toast('✅ 다운로드 완료');
 async function openInspectorModal(){
   const box=$('inspectorList');
   if(box)box.innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';
-  $('inspectorModal').claasync function refreshInspectorList(){
+  $('inspectorModal').classList.add('open');
+await refreshInspectorList();
+}
+function closeInspectorModal(e){
+if(!e||e.target.id==='inspectorModal')$('inspectorModal').classList.remove('open');
+}
+async function refreshInspectorList(){
 const r=await api({action:'getInspectors'});
 const rm=await api({action:'getMaids'});
 const box=$('inspectorList');
