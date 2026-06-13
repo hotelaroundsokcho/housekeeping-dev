@@ -945,6 +945,37 @@ $('reportModal').classList.add('open');
 }
 function closeReportModal(){$('reportModal').classList.remove('open');}
 
+function setReportRange(range){
+const d=new Date();
+const fmt=function(dt){return dt.toISOString().slice(0,10);};
+if(range==='today'){
+$('reportFrom').value=fmt(d);$('reportTo').value=fmt(d);
+}else if(range==='yesterday'){
+const y=new Date(d);y.setDate(y.getDate()-1);
+$('reportFrom').value=fmt(y);$('reportTo').value=fmt(y);
+}else if(range==='7days'){
+const w=new Date(d);w.setDate(w.getDate()-6);
+$('reportFrom').value=fmt(w);$('reportTo').value=fmt(d);
+}
+}
+
+function fmtTime(ts){
+if(!ts)return'';
+return new Date(ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function fmtTimeOnly(ts){
+if(!ts)return'';
+return new Date(ts).toLocaleString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+}
+function calcDuration(startTs,endTs){
+if(!startTs||!endTs)return'';
+const diff=new Date(endTs)-new Date(startTs);
+if(diff<0)return'';
+const h=Math.floor(diff/3600000);
+const m=Math.floor((diff%3600000)/60000);
+return h>0?h+'시간 '+m+'분':m+'분';
+}
+
 async function downloadReport(){
 const from=$('reportFrom').value;
 const to=$('reportTo').value;
@@ -955,6 +986,7 @@ const r=await api({action:'getReportData',dateFrom:from,dateTo:to});
 if(!r.ok){hideLoad();toast('데이터 로드 실패');return;}
 const KR_S={occupied:'재실',uncleaned:'미정비',cleaning:'정비중',
 inspection:'인스펙션필요',vacant:'공실완료',broken:'고장',cleaned:'인스펙션필요'};
+
 const tally={};
 r.rooms.forEach(function(rm){
 if(!rm.maidName)return;
@@ -968,11 +1000,13 @@ if(st==='cleaning')tally[name].wip++;
 }
 });
 });
+
 const sc={occupied:0,uncleaned:0,cleaning:0,inspection:0,vacant:0,broken:0};
 r.rooms.forEach(function(rm){
 const st=rm.status==='cleaned'?'inspection':rm.status;
 if(sc[st]!==undefined)sc[st]++;
 });
+
 const summary=[
 ['호텔 어라운드 속초 — 업무일지'],
 ['기간',from+' ~ '+to],
@@ -988,28 +1022,51 @@ const summary=[
 const name=e[0],d=e[1];
 return [name,d.done,d.wip,d.total,d.total?Math.round(d.done/d.total*100)+'%':'0%'];
 }));
+
 const noteMap={};
 r.notes.forEach(function(n){
 if(!noteMap[n.roomNo])noteMap[n.roomNo]=[];
 const t=n.timestamp?new Date(n.timestamp).toLocaleString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'';
 noteMap[n.roomNo].push('['+t+'] '+n.sender+': '+n.note);
 });
+
+const stepMap={};
+r.history.forEach(function(h){
+const no=String(h.roomNo);
+if(!stepMap[no])stepMap[no]={};
+const st=h.toStatus==='cleaned'?'inspection':h.toStatus;
+if(['cleaning','inspection','vacant'].includes(st)){
+stepMap[no][st]=h.timestamp;
+}
+});
+
 const detail=[
-['객실번호','타입코드','타입명','현재상태','담당메이드','마지막변경','메모']
+['객실번호','타입','담당 메이드','현재상태','정비시작','인스펙션요청','공실완료','소요시간','메모']
 ].concat(r.rooms.map(function(rm){
+const no=String(rm.roomNo);
+const steps=stepMap[no]||{};
+const tCleaning=steps['cleaning']||'';
+const tInspection=steps['inspection']||'';
+const tVacant=steps['vacant']||'';
+const duration=calcDuration(tCleaning,tVacant);
 return [
-rm.roomNo,rm.typeCode,rm.typeName,
-KR_S[rm.status]||rm.status,
+rm.roomNo,
+rm.typeCode,
 rm.maidName||'미배정',
-rm.updatedAt?new Date(rm.updatedAt).toLocaleString('ko-KR'):'',
-(noteMap[rm.roomNo]||[]).join(' | ')
+KR_S[rm.status]||rm.status,
+fmtTimeOnly(tCleaning),
+fmtTimeOnly(tInspection),
+fmtTimeOnly(tVacant),
+duration,
+(noteMap[no]||[]).join('\n')
 ];
 }));
+
 const hist=[
 ['변경시각','객실번호','이전상태','변경후상태','변경자','역할']
 ].concat(r.history.map(function(h){
 return [
-h.timestamp?new Date(h.timestamp).toLocaleString('ko-KR'):'',
+fmtTime(h.timestamp),
 h.roomNo,
 KR_S[h.fromStatus]||h.fromStatus||'',
 KR_S[h.toStatus]||h.toStatus||'',
@@ -1017,12 +1074,13 @@ h.changedBy||'',
 h.role==='admin'?'관리자':'메이드'
 ];
 }));
+
 const wb=XLSX.utils.book_new();
 const ws1=XLSX.utils.aoa_to_sheet(summary);
 ws1['!cols']=[{wch:20},{wch:12},{wch:12},{wch:14},{wch:14},{wch:10}];
 XLSX.utils.book_append_sheet(wb,ws1,'업무요약');
 const ws2=XLSX.utils.aoa_to_sheet(detail);
-ws2['!cols']=[{wch:10},{wch:10},{wch:24},{wch:14},{wch:16},{wch:18},{wch:40}];
+ws2['!cols']=[{wch:10},{wch:12},{wch:16},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12},{wch:40}];
 XLSX.utils.book_append_sheet(wb,ws2,'객실상세');
 const ws3=XLSX.utils.aoa_to_sheet(hist);
 ws3['!cols']=[{wch:18},{wch:10},{wch:14},{wch:14},{wch:12},{wch:8}];
