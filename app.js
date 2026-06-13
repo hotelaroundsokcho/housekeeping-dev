@@ -74,18 +74,33 @@ const hash=await sha256(p);
 const r=await api({action:'verifyPin',pin:hash});
 hideLoad();
 if(r.ok){
-if(nameSelect) nameSelect.style.display='block';
+if(nameSelect){
+  nameSelect.style.display='block';
+  renderAdminNameBtns(r.admins);
+}
 $('loginError').textContent='';
 }else $('loginError').textContent='PIN 오류';
 }
 
-function selectAdminName(idx){
-const names=['장경순','박지연'];
-S.role='admin'; S.name=names[idx];
-document.querySelectorAll('.admin-name-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+function selectAdminName(name){
+S.role='admin'; S.name=name;
+document.querySelectorAll('.admin-name-btn').forEach(b=>b.classList.toggle('active',b.dataset.name===name));
 sessionStorage.setItem('hk_role','admin');
-sessionStorage.setItem('hk_name',S.name);
+sessionStorage.setItem('hk_name',name);
 go();
+}
+function renderAdminNameBtns(admins){
+const wrap=$('adminNameSelect');
+if(!wrap)return;
+wrap.innerHTML='';
+(admins||['장경순','박지연']).forEach(function(name){
+  const btn=document.createElement('button');
+  btn.className='admin-name-btn';
+  btn.dataset.name=name;
+  btn.textContent='👔 '+name;
+  btn.onclick=function(){selectAdminName(name);};
+  wrap.appendChild(btn);
+});
 }
 async function loginMaid(){
 const n=$('maidNameInput').value.trim();
@@ -114,7 +129,7 @@ document.querySelectorAll('.admin-name-btn').forEach(b=>b.classList.remove('acti
 async function go(){
 $('loginScreen').style.display='none';$('app').style.display='flex';
 $('headerSub').textContent=S.role==='admin'?'관리자 모드':S.name+' 님';
-['resetBtn','maidSec','changePinBtn','maidMgmtBtn','inspectorMgmtBtn','reportBtn','maidStatsSection','selectModeBtn','assignModeBtn'].forEach(id=>{
+['resetBtn','maidSec','changePinBtn','maidMgmtBtn','adminMgmtBtn','inspectorMgmtBtn','reportBtn','maidStatsSection','selectModeBtn','assignModeBtn'].forEach(id=>{
 const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 });
 showLoad('로딩 중...');
@@ -654,6 +669,53 @@ icon:'/housekeeping/favicon.ico',tag:'hk-chat'
 });
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// ── 관리자 관리 모달 ──
+async function openAdminMgmtModal(){
+  const box=$('adminMgmtList');
+  if(box)box.innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';
+  $('adminMgmtModal').classList.add('open');
+  await refreshAdminList();
+}
+function closeAdminMgmtModal(e){
+  if(!e||e.target.id==='adminMgmtModal')$('adminMgmtModal').classList.remove('open');
+}
+async function refreshAdminList(){
+  const r=await api({action:'getAdmins'});
+  const box=$('adminMgmtList');
+  if(!r.ok){box.innerHTML='<div style="color:var(--uncleaned)">로드 실패</div>';return;}
+  const admins=r.admins||[];
+  if(!admins.length){box.innerHTML='<div style="color:var(--text2);font-size:12px">등록된 관리자 없음</div>';return;}
+  box.innerHTML='';
+  admins.forEach(function(name){
+    const row=document.createElement('div');
+    row.className='maid-row';
+    row.innerHTML='<span class="maid-row-name">👔 '+esc(name)+'</span>';
+    const btn=document.createElement('button');
+    btn.className='maid-del-btn';
+    btn.textContent='삭제';
+    btn.onclick=function(){removeAdminMember(name);};
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+}
+async function addAdminMember(){
+  const inp=$('newAdminInput');
+  const name=inp.value.trim();
+  if(!name)return;
+  showLoad('추가 중...');
+  const r=await api({action:'addAdmin',name});
+  hideLoad();
+  if(r.ok){inp.value='';toast('✅ '+name+' 추가완료');await refreshAdminList();}
+  else toast('추가 실패: '+(r.error||''));
+}
+async function removeAdminMember(name){
+  if(!confirm(name+' 님을 관리자 명단에서 삭제하시겠습니까?'))return;
+  showLoad('삭제 중...');
+  const r=await api({action:'removeAdmin',name});
+  hideLoad();
+  if(r.ok){toast('✅ '+name+' 삭제완료');await refreshAdminList();}
+  else toast('삭제 실패: '+(r.error||''));
+}
 
 // ── 객실 상태변경 팝업 알림 시스템 (관리자 전용) ──
 let _prevRoomMap = null;
