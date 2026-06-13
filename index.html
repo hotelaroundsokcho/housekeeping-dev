@@ -254,7 +254,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 <div id="app">
 <div class="app-header">
 <div><div class="app-title">🏨 객실정비 현황</div><div class="sub" id="headerSub"></div></div>
-<button class="logout-btn" onclick="logout()">로그아웃</button>
+<button id="soundToggleBtn" onclick="toggleSound()" title="알림 소리 ON" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">🔔</button><button class="logout-btn" onclick="logout()">로그아웃</button>
 </div>
 <div class="nav-tabs">
 <div class="nav-tab active" onclick="showTab('rooms')">🏠 객실현황</div>
