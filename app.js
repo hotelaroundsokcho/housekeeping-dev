@@ -106,7 +106,7 @@ sessionStorage.removeItem('hk_role');
 sessionStorage.removeItem('hk_name');
 const ns=$('adminNameSelect');if(ns){ns.style.display='none';}
 switchTab('admin');
-S={role:null,name:'',rooms:[],filter:'all',room:null,status:null,chatSince:null,selectMode:false,selected:new Set(),assignMode:false,assignSelected:new Set()};
+S={role:null,name:'',rooms:[],filter:'all',room:null,status:null,chatSince:null,selectMode:false,selected:new Set(),assignMode:false,assignSelected:new Set()};_prevRoomMap=null;_popupQueue=[];_popupRunning=false;
 $('loginScreen').style.display='flex';$('app').style.display='none';
 $('pinInput').value='';$('maidNameInput').value='';
 document.querySelectorAll('.admin-name-btn').forEach(b=>b.classList.remove('active'));
@@ -131,7 +131,7 @@ else loadChat(true);
 async function loadRooms(silent=false){
 try{
 const r=await api({action:'getRooms'});
-if(r.ok){S.rooms=r.rooms;render();stats();maidStats();}
+if(r.ok){detectRoomChanges(r.rooms);S.rooms=r.rooms;render();stats();maidStats();}
 else if(!silent)toast('로드실패');
 }catch(e){if(!silent)toast('오류');}
 }
@@ -589,6 +589,104 @@ icon:'/housekeeping/favicon.ico',tag:'hk-chat'
 });
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── 객실 상태변경 팝업 알림 시스템 (관리자 전용) ──
+let _prevRoomMap = null;
+let _popupQueue = [];
+let _popupRunning = false;
+
+const STATUS_POPUP_ICON = {
+  occupied:'💗', uncleaned:'🔴', cleaning:'🟡',
+  inspection:'⬜', vacant:'🟢', broken:'🔶', cleaned:'⬜'
+};
+const STATUS_POPUP_COLOR = {
+  occupied:'#f472b6', uncleaned:'#ef4444', cleaning:'#f59e0b',
+  inspection:'#94a3b8', vacant:'#4ade80', broken:'#ff6b35', cleaned:'#94a3b8'
+};
+
+function fmtPopupTime(iso){
+  if(!iso)return'';
+  const d=new Date(iso);
+  const mo=d.getMonth()+1;
+  const dy=d.getDate();
+  const hh=String(d.getHours()).padStart(2,'0');
+  const mm=String(d.getMinutes()).padStart(2,'0');
+  return mo+'/'+dy+' '+hh+':'+mm;
+}
+
+function detectRoomChanges(newRooms){
+  if(S.role!=='admin')return;
+  if(_prevRoomMap===null){
+    _prevRoomMap={};
+    newRooms.forEach(r=>{ _prevRoomMap[String(r.roomNo)]=r.status==='cleaned'?'inspection':r.status; });
+    return;
+  }
+  const changed=[];
+  newRooms.forEach(function(r){
+    const no=String(r.roomNo);
+    const newSt=r.status==='cleaned'?'inspection':r.status;
+    const oldSt=_prevRoomMap[no];
+    if(oldSt!==undefined && oldSt!==newSt){
+      changed.push({roomNo:no,oldSt,newSt,maidName:r.maidName||'',updatedAt:r.updatedAt});
+    }
+    _prevRoomMap[no]=newSt;
+  });
+  if(changed.length) changed.forEach(c=>_popupQueue.push(c));
+  if(changed.length && !_popupRunning) drainPopupQueue();
+}
+
+function drainPopupQueue(){
+  if(!_popupQueue.length){_popupRunning=false;return;}
+  _popupRunning=true;
+  const item=_popupQueue.shift();
+  showRoomChangePopup(item, function(){ setTimeout(drainPopupQueue, 280); });
+}
+
+function showRoomChangePopup(item, onDone){
+  const color=STATUS_POPUP_COLOR[item.newSt]||'#6c8fff';
+  const icon=STATUS_POPUP_ICON[item.newSt]||'🔔';
+  const label=KR[item.newSt]||item.newSt;
+  const timeStr=fmtPopupTime(item.updatedAt);
+  const maidStr=item.maidName?'<span style="font-size:12px;font-weight:600;color:#a78bfa;">'+esc(item.maidName)+'</span>':'';
+  const timeEl=timeStr?'<span style="font-size:11px;color:#8b91a8;">'+timeStr+'</span>':'';
+
+  document.querySelectorAll('.room-change-popup').forEach(function(el){
+    const cur=parseInt(el.style.bottom)||80;
+    el.style.bottom=(cur+74)+'px';
+  });
+
+  const pop=document.createElement('div');
+  pop.className='room-change-popup';
+  pop.style.cssText=
+    'position:fixed;bottom:80px;right:16px;z-index:9999;'+
+    'background:#1a1d27;border:1px solid '+color+';border-left:4px solid '+color+';'+
+    'border-radius:12px;padding:12px 16px;min-width:210px;max-width:280px;'+
+    'box-shadow:0 4px 24px rgba(0,0,0,.55);transition:bottom .25s ease;'+
+    'animation:rcpSlideIn .28s cubic-bezier(.16,1,.3,1);'+
+    'cursor:pointer;display:flex;flex-direction:column;gap:5px;';
+
+  pop.innerHTML=
+    '<div style="display:flex;align-items:center;gap:8px;">'+
+      '<span style="font-size:18px;line-height:1;">'+icon+'</span>'+
+      '<span style="font-size:16px;font-weight:700;color:#e8eaf0;">'+item.roomNo+'호</span>'+
+      '<span style="font-size:12px;font-weight:600;color:'+color+';">'+label+'</span>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:6px;padding-left:26px;">'+
+      maidStr+
+      (maidStr&&timeEl?'<span style="color:#3e4255;font-size:11px;">·</span>':'')+
+      timeEl+
+    '</div>';
+
+  let tid;
+  const remove=function(){
+    clearTimeout(tid);
+    pop.style.animation='rcpSlideOut .22s ease forwards';
+    setTimeout(function(){if(pop.parentNode)pop.parentNode.removeChild(pop);if(onDone)onDone();},220);
+  };
+  pop.onclick=remove;
+  document.body.appendChild(pop);
+  tid=setTimeout(remove, 4500);
+}
 (function restoreSession(){
 const role=sessionStorage.getItem('hk_role');
 const name=sessionStorage.getItem('hk_name');
