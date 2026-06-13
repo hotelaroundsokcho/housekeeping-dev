@@ -584,7 +584,14 @@ const m=$('maidInput').value.trim();
 if(m!==(S.room.maidName||''))calls.push(api({action:'assignMaid',roomNo:S.room.roomNo,maidName:m}));
 }
 const n=$('noteInput').value.trim();
-if(n)calls.push(api({action:'addRoomNote',roomNo:S.room.roomNo,sender:S.name,role:S.role,note:n}));
+if(n){
+  calls.push(api({action:'addRoomNote',roomNo:S.room.roomNo,sender:S.name,role:S.role,note:n}));
+  // 패키지 A: 인스펙터/관리자가 메모 입력 시 담당 메이드에게 채팅 자동 발송
+  if((S.role==='admin'||S.isInspector)&&S.room.maidName){
+    const _noteMsg='📋 '+S.room.roomNo+'호 메모 ('+S.name+' → '+S.room.maidName+'): "'+n+'"';
+    calls.push(api({action:'sendChat',sender:S.name,role:S.role,message:_noteMsg}));
+  }
+}
 await Promise.all(calls);
 const _canInspect=S.role==='admin'||(S.role==='maid'&&(S.isInspector||(S.room.maidName&&S.room.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()))));
 if(_canInspect&&prevStatus==='inspection'&&S.status==='vacant'){
@@ -625,7 +632,7 @@ function addMsgs(msgs){
 const box=$('chatMsgs');
 msgs.forEach(function(m){
 const mine=m.sender===S.name;
-if(!mine) sendChatNotif(m);
+if(!mine){sendChatNotif(m);if(document.visibilityState==='visible')playChatAlert();}
 const d=document.createElement('div');
 d.style.cssText='display:flex;flex-direction:column;align-items:'+(mine?'flex-end':'flex-start');
 d.innerHTML=(!mine?'<div class="chat-sender">'+m.sender+' ('+(m.role==='admin'?'관리자':'메이드')+')</div>':'')+
@@ -667,8 +674,117 @@ new Notification('💬 '+msg.sender+' ('+sl+')',{
 body:msg.message.length>60?msg.message.substring(0,60)+'…':msg.message,
 icon:'/housekeeping/favicon.ico',tag:'hk-chat'
 });
-}
+
+  playChatAlert();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ══════════════════════════════════════════════
+// 패키지 B — 소리/진동 알림 시스템
+// ══════════════════════════════════════════════
+let _audioCtx = null;
+let _soundEnabled = sessionStorage.getItem('hk_sound') !== '0'; // 기본 ON
+
+function _getAudioCtx(){
+  if(!_audioCtx) _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  // iOS: suspended 상태면 resume
+  if(_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+// 알림음 생성 (Web Audio API - 파일 없이 순수 코드로 생성)
+function playSound(type){
+  if(!_soundEnabled) return;
+  try{
+    const ctx = _getAudioCtx();
+    if(type === 'chat'){
+      // 채팅 알림: 짧고 맑은 "띵" (카카오톡 스타일)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } else if(type === 'status'){
+      // 상태변경 알림: 두 음 "딩동"
+      [0, 0.18].forEach(function(delay, i){
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = i === 0 ? 784 : 523;
+        gain.gain.setValueAtTime(0.35, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.25);
+      });
+    } else if(type === 'memo'){
+      // 메모 알림: 세 음 올림 "띵띵띵"
+      [0, 0.15, 0.30].forEach(function(delay){
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 1047;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.12);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.12);
+      });
+    }
+  }catch(e){}
+}
+
+function vibrate(pattern){
+  if(!_soundEnabled) return;
+  if(navigator.vibrate) navigator.vibrate(pattern||[100]);
+}
+
+function playChatAlert(){
+  playSound('chat');
+  vibrate([80]);
+}
+
+function playStatusAlert(){
+  playSound('status');
+  vibrate([60,40,60]);
+}
+
+function playMemoAlert(){
+  playSound('memo');
+  vibrate([80,50,80,50,80]);
+}
+
+// iOS AudioContext unlock (첫 번째 사용자 인터랙션에서 실행)
+function unlockAudio(){
+  try{
+    const ctx = _getAudioCtx();
+    const buf = ctx.createBuffer(1,1,22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    document.removeEventListener('touchstart', unlockAudio);
+    document.removeEventListener('click', unlockAudio);
+  }catch(e){}
+}
+document.addEventListener('touchstart', unlockAudio, {once:true});
+document.addEventListener('click', unlockAudio, {once:true});
+
+function toggleSound(){
+  _soundEnabled = !_soundEnabled;
+  sessionStorage.setItem('hk_sound', _soundEnabled ? '1' : '0');
+  const btn = $('soundToggleBtn');
+  if(btn){
+    btn.textContent = _soundEnabled ? '🔔' : '🔕';
+    btn.title = _soundEnabled ? '알림 소리 ON' : '알림 소리 OFF';
+  }
+  toast(_soundEnabled ? '🔔 알림 소리 켜짐' : '🔕 알림 소리 꺼짐');
+  if(_soundEnabled) playSound('chat'); // 미리듣기
+}
 // ── 관리자 관리 모달 ──
 async function openAdminMgmtModal(){
   const box=$('adminMgmtList');
