@@ -288,6 +288,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 <button class="assign-mode-btn" id="assignModeBtn" style="display:none" onclick="toggleAssignMode()">👤 메이드 일괄 배정</button>
 <button class="reset-btn" id="resetBtn" style="display:none" onclick="confirmReset()">⚠️ 전체 초기화 (긴급용)</button>
 <button class="maid-mgmt-btn" id="maidMgmtBtn" style="display:none" onclick="openMaidMgmtModal()">👥 메이드 명단 관리</button>
+        <button class="maid-mgmt-btn" id="adminMgmtBtn" style="display:none" onclick="openAdminMgmtModal()">👔 관리자 명단 관리</button>
 <button class="maid-mgmt-btn" id="inspectorMgmtBtn" style="display:none" onclick="openInspectorModal()">🔎 인스펙터 관리</button>
 <button class="change-pin-btn" id="changePinBtn" style="display:none" onclick="openChangePinModal()">🔑 관리자 PIN 변경</button>
 <div class="rooms-grid" id="roomsGrid"></div>
@@ -355,7 +356,22 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 <button class="pin-cancel-btn" style="margin-top:16px" onclick="closeMaidMgmtModal()">닫기</button>
 </div>
 </div>
-<div class="modal-overlay" id="inspectorModal" onclick="closeInspectorModal(event)">
+<div class="modal-overlay"   <!-- 관리자 명단 관리 모달 -->
+  <div class="modal-overlay" id="adminMgmtModal" onclick="closeAdminMgmtModal(event)">
+    <div class="modal-box" style="max-width:360px">
+      <div class="modal-header">
+        <span>👔 관리자 명단 관리</span>
+        <button class="modal-close" onclick="closeAdminMgmtModal()">✕</button>
+      </div>
+      <div id="adminMgmtList" style="margin-bottom:16px;max-height:240px;overflow-y:auto"></div>
+      <div style="display:flex;gap:8px">
+        <input id="newAdminInput" class="form-input" placeholder="관리자 이름 입력" style="flex:1;padding:10px 12px;font-size:14px" onkeydown="if(event.key==='Enter')addAdminMember()">
+        <button class="btn-primary" style="padding:10px 16px;font-size:14px;white-space:nowrap" onclick="addAdminMember()">추가</button>
+      </div>
+      <p style="font-size:11px;color:var(--text2);margin-top:10px;line-height:1.5">※ 최소 1명 이상 유지 필요<br>※ 추가된 관리자는 다음 로그인부터 적용됩니다</p>
+    </div>
+  </div>
+id="inspectorModal" onclick="closeInspectorModal(event)">
 <div class="modal-box" style="max-width:360px">
 <div class="modal-title">🔎 인스펙터 관리 / Inspector</div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:12px">관리자가 ON하면 해당 메이드가 오늘 인스펙션 권한을 가집니다. 매일 자동 초기화됩니다.<br>Admin grants temporary inspection rights. Auto-reset daily.</div>
