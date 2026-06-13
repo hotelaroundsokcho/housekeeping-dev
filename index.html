@@ -208,6 +208,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
   from { opacity:1; transform:translateX(0); }
   to   { opacity:0; transform:translateX(110%); }
 }
+
+.rooms-grid-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;}
+@media(max-width:400px){.rooms-grid-inner{grid-template-columns:repeat(2,1fr);}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
