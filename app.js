@@ -411,6 +411,19 @@ function render(){
     const total  =rooms.length;
     const doneCount=done.length;
 
+    // 예상 완료 시각 (완료 객실 간격 기반)
+    let etaStr='';
+    if(pending.length>0&&doneCount>=2){
+      const vacantTimes=done.map(r=>r.updatedAt?new Date(r.updatedAt).getTime():0).filter(Boolean).sort();
+      if(vacantTimes.length>=2){
+        const gaps=[];
+        for(let i=1;i<vacantTimes.length;i++)gaps.push(vacantTimes[i]-vacantTimes[i-1]);
+        const avgGap=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+        const etaDate=new Date(vacantTimes[vacantTimes.length-1]+avgGap*pending.length);
+        etaStr=etaDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+' 예상';
+      }
+    }
+
     // 진행률 헤더
     const pct=total?Math.round(doneCount/total*100):0;
     const bar=document.createElement('div');
@@ -426,6 +439,7 @@ function render(){
       '<div style="margin-top:5px;font-size:11px;color:var(--text2);text-align:right;">'+
         (pending.length>0?'남은 객실 '+pending.length+'개':'✅ 모든 객실 공실완료!')+
         ' · 완료율 '+pct+'%'+
+        (etaStr?' · <span style="color:var(--accent);font-weight:600;">'+etaStr+'</span>':'')+
       '</div>';
     grid.appendChild(bar);
 
@@ -1075,6 +1089,33 @@ h.role==='admin'?'관리자':'메이드'
 ];
 }));
 
+// ── 메이드별 상세 시트 ──
+const maidNames=Object.keys(tally);
+const maidDetail=[
+['메이드','객실번호','타입','현재상태','정비시작','인스펙션요청','공실완료','소요시간','메모']
+];
+maidNames.forEach(function(maidName){
+r.rooms.forEach(function(rm){
+if(!rm.maidName)return;
+const assigned=rm.maidName.split(',').map(function(n){return n.trim();});
+if(!assigned.map(function(n){return n.toLowerCase();}).includes(maidName.toLowerCase()))return;
+const no=String(rm.roomNo);
+const steps=stepMap[no]||{};
+const tC=steps['cleaning']||'';
+const tI=steps['inspection']||'';
+const tV=steps['vacant']||'';
+maidDetail.push([
+maidName,rm.roomNo,rm.typeCode,KR_S[rm.status]||rm.status,
+fmtTimeOnly(tC),fmtTimeOnly(tI),fmtTimeOnly(tV),calcDuration(tC,tV),
+(noteMap[no]||[]).join('\n')
+]);
+});
+const d=tally[maidName];
+const pct=d.total?Math.round(d.done/d.total*100):0;
+maidDetail.push([maidName+' 소계','','','',
+'담당:'+d.total+'객실','완료:'+d.done+'객실','진행중:'+d.wip+'객실','완료율:'+pct+'%','']);
+maidDetail.push([]);
+});
 const wb=XLSX.utils.book_new();
 const ws1=XLSX.utils.aoa_to_sheet(summary);
 ws1['!cols']=[{wch:20},{wch:12},{wch:12},{wch:14},{wch:14},{wch:10}];
@@ -1082,6 +1123,9 @@ XLSX.utils.book_append_sheet(wb,ws1,'업무요약');
 const ws2=XLSX.utils.aoa_to_sheet(detail);
 ws2['!cols']=[{wch:10},{wch:12},{wch:16},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12},{wch:40}];
 XLSX.utils.book_append_sheet(wb,ws2,'객실상세');
+const ws4=XLSX.utils.aoa_to_sheet(maidDetail);
+ws4['!cols']=[{wch:14},{wch:10},{wch:12},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12},{wch:36}];
+XLSX.utils.book_append_sheet(wb,ws4,'메이드별');
 const ws3=XLSX.utils.aoa_to_sheet(hist);
 ws3['!cols']=[{wch:18},{wch:10},{wch:14},{wch:14},{wch:12},{wch:8}];
 XLSX.utils.book_append_sheet(wb,ws3,'변경이력');
