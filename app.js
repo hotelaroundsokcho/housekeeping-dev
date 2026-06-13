@@ -373,7 +373,11 @@ let rooms=S.rooms.map(r=>r.status==='cleaned'?{...r,status:'inspection'}:r);
 if(S.filter!=='all')rooms=rooms.filter(x=>x.status===S.filter);
 if(S.role==='maid'){
 rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='vacant'&&x.status!=='broken');
+if(S.isInspector){
+rooms=rooms.filter(x=>(x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()))||x.status==='inspection');
+}else{
 rooms=rooms.filter(x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()));
+}
 }
 const grid=$('roomsGrid');grid.innerHTML='';
   if(S.role==='maid'&&rooms.length===0){grid.innerHTML='<div style="color:var(--text2);text-align:center;padding:40px 20px;font-size:14px">배정된 객실이 없습니다.<br><small>Waiting for room assignment</small></div>';return;}
@@ -691,37 +695,51 @@ hideLoad();closeReportModal();toast('✅ 다운로드 완료');
 async function openInspectorModal(){
   const box=$('inspectorList');
   if(box)box.innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';
-  $('inspectorModal').classList.add('open');
-  await refreshInspectorList();
+  $('inspectorModal').claasync function refreshInspectorList(){
+const r=await api({action:'getInspectors'});
+const rm=await api({action:'getMaids'});
+const box=$('inspectorList');
+if(!box)return;
+const inspectors=r.ok?(r.inspectors||[]):[];
+const maids=rm.ok?(rm.maids||[]):[];
+const adminNames=['장경순','박지연'];
+// 관리자 + 메이드 전체 (중복 없이)
+const allTargets=[
+...adminNames,
+...maids.filter(m=>!adminNames.map(a=>a.toLowerCase()).includes(m.toLowerCase()))
+];
+if(!allTargets.length){box.innerHTML='<div style="color:var(--text2);font-size:12px">대상 없음</div>';return;}
+box.innerHTML='';
+let maidSectionAdded=false;
+allTargets.forEach(function(name){
+const isAdmin=adminNames.map(a=>a.toLowerCase()).includes(name.toLowerCase());
+const isIns=inspectors.map(n=>n.toLowerCase()).includes(name.toLowerCase());
+if(!isAdmin&&!maidSectionAdded){
+maidSectionAdded=true;
+const maidHeader=document.createElement('div');
+maidHeader.style.cssText='font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 6px;margin-top:4px;border-top:1px solid var(--border);';
+maidHeader.textContent='메이드 / Maid';
+box.appendChild(maidHeader);
+}else if(isAdmin&&!box.querySelector('.inspector-admin-header')){
+const adminHeader=document.createElement('div');
+adminHeader.className='inspector-admin-header';
+adminHeader.style.cssText='font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;padding-bottom:6px;';
+adminHeader.textContent='관리자 / Admin';
+box.insertBefore(adminHeader,box.firstChild);
 }
-function closeInspectorModal(e){
-  if(!e||e.target.id==='inspectorModal')$('inspectorModal').classList.remove('open');
-}
-async function refreshInspectorList(){
-  const r=await api({action:'getInspectors'});
-  const rm=await api({action:'getMaids'});
-  const box=$('inspectorList');
-  if(!box)return;
-  const inspectors=r.ok?(r.inspectors||[]):[];
-  const maids=rm.ok?(rm.maids||[]):[];
-  if(!maids.length){box.innerHTML='<div style="color:var(--text2);font-size:12px">등록된 메이드 없음</div>';return;}
-  box.innerHTML='';
-  maids.forEach(function(name){
-    const isIns=inspectors.map(n=>n.toLowerCase()).includes(name.toLowerCase());
-    const row=document.createElement('div');
-    row.className='maid-row';
-    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)';
-    row.innerHTML='<span style="font-size:14px">👤 '+esc(name)+'</span>';
-    const tog=document.createElement('button');
-    tog.style.cssText='padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;background:'+(isIns?'var(--vacant)':'var(--surface2)')+';color:'+(isIns?'#000':'var(--text2)');
-    tog.textContent=isIns?'ON ✓':'OFF';
-    tog.onclick=async function(){
-      showLoad('저장 중...');
-      await api({action:'setInspector',maidName:name,enable:!isIns});
-      hideLoad();
-      await refreshInspectorList();
-    };
-    row.appendChild(tog);
-    box.appendChild(row);
-  });
+const row=document.createElement('div');
+row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);';
+row.innerHTML='<span style="font-size:14px">'+(isAdmin?'👔':'👤')+' '+esc(name)+'</span>';
+const tog=document.createElement('button');
+tog.style.cssText='padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;background:'+(isIns?'var(--vacant)':'var(--surface2)')+';color:'+(isIns?'#000':'var(--text2)');
+tog.textContent=isIns?'ON ✓':'OFF';
+tog.onclick=async function(){
+showLoad('저장 중...');
+await api({action:'setInspector',maidName:name,enable:!isIns});
+hideLoad();
+await refreshInspectorList();
+};
+row.appendChild(tog);
+box.appendChild(row);
+});
 }
