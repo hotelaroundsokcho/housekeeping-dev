@@ -3,7 +3,8 @@ let S = {
 role:null, name:'', rooms:[], filter:'all',
 room:null, status:null, chatSince:null,
 isInspector:false, selectMode:false, selected:new Set(),
-assignMode:false, assignSelected:new Set()
+assignMode:false, assignSelected:new Set(),
+todayInspector:''
 };
 let timer = null;
 const MAID_COLOR_MAP = {};
@@ -133,7 +134,7 @@ $('headerSub').textContent=S.role==='admin'?'관리자 모드':S.name+' 님';
 const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 });
 showLoad('로딩 중...');
-if(S.role==='admin'){const mr=await api({action:'getMaids'});S.maids=(mr.ok&&mr.maids)?mr.maids:[];}
+if(S.role==='admin'){const mr=await api({action:'getMaids'});S.maids=(mr.ok&&mr.maids)?mr.maids:[];const tr=await api({action:'getTodayInspector'});S.todayInspector=(tr.ok&&tr.inspector)?tr.inspector:'';renderTodayInspectorBar();}
 await loadRooms();
 hideLoad();
 maybeShowNotifBar();
@@ -147,7 +148,7 @@ else loadChat(true);
 async function loadRooms(silent=false){
 try{
 const r=await api({action:'getRooms'});
-if(r.ok){detectRoomChanges(r.rooms);S.rooms=r.rooms;render();stats();maidStats();}
+if(r.ok){detectRoomChanges(r.rooms);S.rooms=r.rooms;render();stats();maidStats();if(S.role==='admin')renderTodayInspectorBar();}
 else if(!silent)toast('로드실패');
 }catch(e){if(!silent)toast('오류');}
 }
@@ -396,7 +397,7 @@ function render(){
   if(S.role==='maid'){
     rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken');
     if(S.isInspector){
-      rooms=rooms.filter(x=>(x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()))||x.status==='inspection');
+      rooms=rooms.filter(x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName));
     }else{
       rooms=rooms.filter(x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()));
     }
@@ -518,7 +519,7 @@ function buildCard(room, isDone){
     '<div class="room-no" style="color:'+theme.numColor+'">'+no+'</div>'+
     '<div class="room-type-row"><span class="room-type" style="color:'+theme.dimColor+'">'+room.typeCode+'</span>'+badge+'</div>'+
     '<div class="room-status status-'+room.status+'">'+KR[room.status]+'</div>'+
-    maidHtml+timeHtml;
+    (room.inspectorName&&room.status==='inspection'?'<div class="room-inspector-badge">🔍 '+esc(room.inspectorName)+'</div>':'')+maidHtml+timeHtml;
 
   if(S.selectMode&&S.role==='admin'){
     card.innerHTML='<div class="card-check">'+(isSel?'☑':'☐')+'</div>'+innerHtml;
@@ -657,6 +658,24 @@ $('roomModal').classList.remove('open');toast('✅ 저장완료');
 }catch(e){hideLoad();toast('저장실패');}
 }
 
+
+function renderTodayInspectorBar(){
+  const bar=$('todayInspectorBar');
+  if(!bar)return;
+  bar.style.display=S.role==='admin'?'flex':'none';
+  const inspectors=S.maids.filter(m=>m);
+  bar.innerHTML='<span style="color:var(--text2);font-size:13px;margin-right:8px;">🔍 오늘의 인스펝터:</span>'+
+    inspectors.map(function(name){
+      const active=S.todayInspector===name;
+      return '<button'+(active?' style="background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:20px;padding:4px 14px;font-size:13px;cursor:pointer;margin-right:6px;"':' style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:13px;cursor:pointer;margin-right:6px;"')+' onclick="setTodayInspectorUI(\''+name+'\')">'  +name+'</button>';
+    }).join('')+
+    (S.todayInspector?'<button onclick="setTodayInspectorUI(\'\')" style="background:transparent;color:var(--text2);border:none;font-size:12px;cursor:pointer;padding:4px 8px;">✕ 해제</button>':'');
+}
+async function setTodayInspectorUI(name){
+  const r=await api({action:'setTodayInspector',inspector:name});
+  if(r.ok){S.todayInspector=name;renderTodayInspectorBar();toast(name?'인스펝터: '+name+' 지정':'인스펝터 해제');}
+  else toast('오류');
+}
 async function confirmReset(){
 if(!confirm('⚠️ 전체 객실을 미정비로 초기화합니다.\n재실·공실완료 포함 모든 상태가 초기화됩니다.\n정말 계속하시겠습니까?'))return;
 if(!confirm('🔴 재확인: 정말로 전체 초기화하시겠습니까?'))return;
