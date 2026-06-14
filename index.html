@@ -351,6 +351,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 </div>
 </div>
 <div class="modal-section" id="maidSec"><label>메이드 배정 (관리자)</label><div class="maid-picker" id="maidPicker"></div><div class="maid-selected-display" id="maidSelectedDisplay"></div><input type="hidden" id="maidInput"></div>
+<div class="modal-section" id="inspectorOverrideSection" style="display:none"><label>🔍 인스펙터 변경 / Change Inspector</label><select id="inspectorOverridePicker" style="width:100%;padding:8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;" onchange="this.dataset.changed='1'"></select></div>
 <div class="modal-section"><label>메모 추가</label><textarea class="note-input" id="noteInput" placeholder="특이사항..."></textarea></div>
 <div class="modal-section"><label>메모 이력</label><div class="notes-list" id="notesList"></div></div>
 <div class="notes-section" style="margin-top:14px"><div class="notes-label" style="font-size:13px;color:var(--text2);margin-bottom:6px">변경 이력 / History</div><div id="historyList"></div></div>
