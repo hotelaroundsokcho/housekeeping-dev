@@ -283,58 +283,62 @@ else S.assignSelected.add(no);
 updateAssignBar();render();
 }
 
-async function loadAssignBar(){
-const r=await api({action:'getMaids'});
-const maids=(r.ok&&r.maids&&r.maids.length)?r.maids:[];
+function loadAssignBar(){
+const maids=S.maids&&S.maids.length?S.maids:[];
 const btnWrap=$('assignMaidBtns');
 if(!btnWrap)return;
 btnWrap.innerHTML='';
+S._assignPickSelected=new Set();
 if(!maids.length){
 btnWrap.innerHTML='<span style="color:var(--text2);font-size:12px">등록된 메이드 없음</span>';
 return;
 }
+function renderAssignPicker(){
+btnWrap.innerHTML='';
+const COLORS=['#06b6d4','#a78bfa','#fb923c','#f472b6','#facc15'];
 maids.forEach(function(name,idx){
+const color=COLORS[idx%5];
+const isSel=S._assignPickSelected.has(name);
 const btn=document.createElement('button');
 btn.className='assign-maid-btn';
-const color=MAID_COLORS[idx%5];
-btn.style.cssText='background:'+color+'22;border:1px solid '+color+'66;color:'+color+';padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
-btn.textContent='👤 '+name;
-btn.onclick=function(){execBulkAssign(name);};
+btn.style.cssText=isSel
+?'background:'+color+'33;border:2px solid '+color+';color:'+color+';padding:8px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;'
+:'background:'+color+'11;border:1.5px solid '+color+'55;color:'+color+';padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;opacity:0.75;';
+btn.textContent=(isSel?'✓ ':'')+name;
+btn.onclick=function(){
+if(S._assignPickSelected.has(name))S._assignPickSelected.delete(name);
+else S._assignPickSelected.add(name);
+renderAssignPicker();
+};
 btnWrap.appendChild(btn);
 });
-if(maids.length>=2){
-for(let i=0;i<maids.length-1;i++){
-for(let j=i+1;j<maids.length;j++){
-const btn=document.createElement('button');
-btn.className='assign-maid-btn';
-const c1=MAID_COLORS[i%5],c2=MAID_COLORS[j%5];
-btn.style.cssText='background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:var(--text);padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
-const combinedName=maids[i]+','+maids[j];
-btn.innerHTML='<span style="color:'+c1+'">'+maids[i]+'</span> + <span style="color:'+c2+'">'+maids[j]+'</span>';
-btn.onclick=function(){execBulkAssign(combinedName);};
-btnWrap.appendChild(btn);
+const sep=document.createElement('div');
+sep.style.cssText='width:1px;height:32px;background:var(--border);margin:0 4px;flex-shrink:0;';
+btnWrap.appendChild(sep);
+const selCount=S._assignPickSelected.size;
+const ok=document.createElement('button');
+ok.className='assign-maid-btn';
+ok.style.cssText='background:rgba(74,222,128,.15);border:1.5px solid rgba(74,222,128,.4);color:var(--vacant);padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;'+(selCount===0?'opacity:0.4;':'');
+ok.textContent=selCount>0?'✅ '+Array.from(S._assignPickSelected).join('+')+' 배정':'✅ 배정';
+ok.onclick=function(){
+if(S._assignPickSelected.size===0){toast('메이드를 선택하세요');return;}
+execBulkAssign(Array.from(S._assignPickSelected).join(','));
+};
+btnWrap.appendChild(ok);
+const clr=document.createElement('button');
+clr.className='assign-maid-btn';
+clr.style.cssText='background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);color:var(--uncleaned);padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
+clr.textContent='✕ 해제';
+clr.onclick=function(){execBulkAssign('');};
+btnWrap.appendChild(clr);
 }
-}
-}
-const clearBtn=document.createElement('button');
-clearBtn.className='assign-maid-btn';
-clearBtn.style.cssText='background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--uncleaned);padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
-clearBtn.textContent='✕ 배정 해제';
-clearBtn.onclick=function(){execBulkAssign('');};
-btnWrap.appendChild(clearBtn);
+renderAssignPicker();
 }
 
 function updateAssignBar(){
 const cnt=S.assignSelected.size;
 const countEl=$('assignCount');
 if(countEl)countEl.textContent=cnt+'개 객실 선택됨';
-const btnWrap=$('assignMaidBtns');
-if(btnWrap){
-btnWrap.querySelectorAll('.assign-maid-btn').forEach(b=>{
-b.style.opacity=cnt===0?'0.45':'1';
-b.disabled=cnt===0;
-});
-}
 }
 
 async function execBulkAssign(maidName){
