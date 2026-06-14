@@ -4,7 +4,8 @@ role:null, name:'', rooms:[], filter:'all',
 room:null, status:null, chatSince:null,
 isInspector:false, selectMode:false, selected:new Set(),
 assignMode:false, assignSelected:new Set(),
-todayInspector:''
+todayInspector:'',
+  crossInspection:false
 };
 let timer = null;
 const MAID_COLOR_MAP = {};
@@ -135,6 +136,7 @@ const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 });
 showLoad('로딩 중...');
 if(S.role==='admin'){const mr=await api({action:'getMaids'});S.maids=(mr.ok&&mr.maids)?mr.maids:[];const tr=await api({action:'getTodayInspector'});S.todayInspector=(tr.ok&&tr.inspector)?tr.inspector:'';renderTodayInspectorBar();}
+if(S.role==='admin'){const cr=await api({action:'getCrossInspection'});if(cr.ok)S.crossInspection=cr.enabled;renderTodayInspectorBar();}
 await loadRooms();
 hideLoad();
 maybeShowNotifBar();
@@ -640,6 +642,10 @@ if(n){
     calls.push(api({action:'sendChat',sender:S.name,role:S.role,message:_noteMsg}));
   }
 }
+const newInsp=document.getElementById('inspectorOverridePicker');
+if(newInsp&&S.room&&S.room.status==='inspection'&&newInsp.dataset.changed==='1'){
+  calls.push(api({action:'assignInspector',roomNo:S.room.roomNo,inspectorName:newInsp.value}));
+}
 await Promise.all(calls);
 if(S.status==='cleaning'){
 const _nm=$('maidInput').value.trim();
@@ -686,7 +692,18 @@ catch(e){hideLoad();toast('실패');}
 async function openMaidMgmtModal(){$('maidMgmtList').innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';$('maidMgmtModal').classList.add('open');await refreshMaidList();}
 async function refreshMaidList(){const r=await api({action:'getMaids'});const box=$('maidMgmtList');if(!r.ok){box.innerHTML='<div style="color:var(--uncleaned)">로드 실패</div>';return;}const maids=r.maids||[];if(!maids.length){box.innerHTML='<div style="color:var(--text2);font-size:12px">등록된 메이드 없음</div>';return;}box.innerHTML='';maids.forEach(function(name){const row=document.createElement('div');row.className='maid-row';row.innerHTML='<span class="maid-row-name">👤 '+esc(name)+'</span>';const btn=document.createElement('button');btn.className='maid-del-btn';btn.textContent='삭제';btn.onclick=function(){removeMaid(name);};row.appendChild(btn);box.appendChild(row);});}
 async function addMaid(){const inp=$('newMaidInput');const name=inp.value.trim();if(!name)return;showLoad('추가 중...');const r=await api({action:'addMaid',name});hideLoad();if(r.ok){inp.value='';toast('✅ '+name+' 추가완료');await refreshMaidList();}else toast('추가 실패: '+(r.error||''));}
+  let crossBtn=document.getElementById('crossInspBtn');
+  if(!crossBtn){crossBtn=document.createElement('button');crossBtn.id='crossInspBtn';crossBtn.style.cssText='margin-left:8px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;';bar.appendChild(crossBtn);crossBtn.onclick=toggleCrossInspection;}
+  crossBtn.textContent=S.crossInspection?'🔀 크로스 ON':'🔀 크로스 OFF';
+  crossBtn.style.background=S.crossInspection?'var(--accent)':'var(--surface2)';
+  crossBtn.style.color=S.crossInspection?'#fff':'var(--text2)';
 async function removeMaid(name){if(!confirm(name+' 님을 명단에서 삭제하시겠습니까?'))return;showLoad('삭제 중...');const r=await api({action:'removeMaid',name});hideLoad();if(r.ok){toast('✅ '+name+' 삭제완료');await refreshMaidList();}else toast('삭제 실패: '+(r.error||''));}
+async function toggleCrossInspection(){
+  const newVal=!S.crossInspection;
+  const r=await api({action:'setCrossInspection',enabled:newVal});
+  if(r.ok){S.crossInspection=newVal;renderTodayInspectorBar();toast(newVal?'🔀 크로스 인스펙션 ON':'👤 오늘의 인스펙터 모드');}
+  else toast('설정 실패');
+}
 function closeMaidMgmtModal(e){if(!e||e.target.id==='maidMgmtModal')$('maidMgmtModal').classList.remove('open');}
 function openChangePinModal(){$('cpCurrent').value='';$('cpNew').value='';$('cpConfirm').value='';$('cpError').textContent='';$('changePinModal').classList.add('open');}
 function closeChangePinModal(e){if(!e||e.target.id==='changePinModal')$('changePinModal').classList.remove('open');}
