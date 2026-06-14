@@ -490,9 +490,10 @@ function buildCard(room, isDone){
   const maidColor=assignedIdx>=0?MAID_COLORS[assignedIdx]:null;
   const theme=STATUS_CARD_THEME[room.status]||STATUS_CARD_THEME.inspection;
 
-  card.className='room-card'+(isSel||isAssignSel?' card-selected':'');
+  const _isUnassignCleaning=(room.status==='cleaning'&&!room.maidName);
+  card.className='room-card'+(isSel||isAssignSel?' card-selected':'')+(_isUnassignCleaning?' cleaning-unassigned':'');
   card.style.background=theme.bg;
-  card.style.border='1px solid '+(isSel||isAssignSel?'#ef4444':theme.border);
+  card.style.border=_isUnassignCleaning?'2px dashed #f59e0b':'1px solid '+(isSel||isAssignSel?'#ef4444':theme.border);
   if(isDone) card.style.opacity='0.5';
   if(maidColor&&!isAssignSel){card.style.borderLeft='5px solid '+maidColor;}
   if(isAssignSel){card.style.borderLeft='5px solid #4ade80';card.style.boxShadow='0 0 0 2px rgba(74,222,128,.35)';}
@@ -507,9 +508,10 @@ function buildCard(room, isDone){
     maidHtml=maidNames.map(function(name){
       const mc=getMaidColorIdx(name);
       const color=mc>=0?MAID_COLORS[mc]:null;
-      return '<div class="room-maid-badge"'+(color?' style="background:'+color+'22;color:'+color+';border-color:'+color+'44"':'')+'>'
-        +'<span class="maid-dot"'+(color?' style="background:'+color+'"':'')+'>'+'</span>'+esc(name)+'</div>';
+      return '<div class="room-maid-badge"'+(color?' style="background:'+color+'22;color:'+color+';border-color:'+color+'44"':'')+'>'        +'<span class="maid-dot"'+(color?' style="background:'+color+'"':'')+'>'+'</span>'+esc(name)+'</div>';
     }).join('');
+  }else if(room.status==='cleaning'){
+    maidHtml='<div class="room-maid-badge" style="background:rgba(245,158,11,.18);color:#f59e0b;border-color:rgba(245,158,11,.5);font-weight:700;">⚠️ 미배정</div>';
   }
 
   const innerHtml=
@@ -638,6 +640,11 @@ if(n){
   }
 }
 await Promise.all(calls);
+if(S.status==='cleaning'){
+const _nm=$('maidInput').value.trim();
+const _cm=S.room.maidName||'';
+if(!_nm&&!_cm)setTimeout(function(){toast('⚠️ '+S.room.roomNo+'호 메이드 미배정 상태로 정비중 전환되었습니다');},400);
+}
 const _canInspect=S.role==='admin'||(S.role==='maid'&&(S.isInspector||(S.room.maidName&&S.room.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()))));
 if(_canInspect&&prevStatus==='inspection'&&S.status==='vacant'){
 const _chatSender=S.role==='admin'?'관리자':S.name;
