@@ -559,6 +559,16 @@ const _showAdmin=S.role==='admin'||(b.dataset.status==='vacant'&&(S.isInspector|
 b.style.display=_showAdmin?'':'none';
 });
 if(S.role==='admin'){renderMaidPicker(S.room.maidName||'');}
+const inspSec=document.getElementById('inspectorOverrideSection');
+const inspPicker=document.getElementById('inspectorOverridePicker');
+if(inspSec&&inspPicker&&S.role==='admin'){
+  if(S.room.status==='inspection'){
+    inspSec.style.display='block';
+    inspPicker.dataset.changed='0';
+    const allNames=[...S.maids,...['장경순','박지연']];
+    inspPicker.innerHTML='<option value="">선택하세요 / Select</option>'+allNames.map(n=>'<option value="'+n+'"'+(S.room.inspectorName===n?' selected':'')+'>'+n+'</option>').join('');
+  }else{inspSec.style.display='none';}
+}else if(inspSec){inspSec.style.display='none';}
 $('notesList').innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';
 $('roomModal').classList.add('open');
 try{
