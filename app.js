@@ -133,6 +133,7 @@ $('headerSub').textContent=S.role==='admin'?'관리자 모드':S.name+' 님';
 const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 });
 showLoad('로딩 중...');
+if(S.role==='admin'){const mr=await api({action:'getMaids'});S.maids=(mr.ok&&mr.maids)?mr.maids:[];}
 await loadRooms();
 hideLoad();
 maybeShowNotifBar();
@@ -548,6 +549,7 @@ const _isSelfInspect=S.role==='maid'&&S.room&&S.room.maidName&&S.room.maidName.s
 const _showAdmin=S.role==='admin'||(b.dataset.status==='vacant'&&(S.isInspector||_isSelfInspect));
 b.style.display=_showAdmin?'':'none';
 });
+if(S.role==='admin'){renderMaidPicker(S.room.maidName||'');}
 $('notesList').innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';
 $('roomModal').classList.add('open');
 try{
@@ -573,6 +575,31 @@ hl.innerHTML='<div style="color:var(--text2);font-size:13px">이력 없음</div>
 }catch(e){}
 }
 
+function renderMaidPicker(currentMaid){
+const picker=$('maidPicker');const display=$('maidSelectedDisplay');if(!picker)return;
+let selected=new Set(currentMaid?currentMaid.split(',').map(n=>n.trim()).filter(Boolean):[]);
+const maids=S.maids&&S.maids.length?S.maids:[];
+const COLORS=['color-0','color-1','color-2','color-3','color-4'];
+function renderButtons(){
+picker.innerHTML='';
+maids.forEach(function(name,idx){
+const btn=document.createElement('button');
+btn.className='maid-pick-btn'+(selected.has(name)?' selected selected-'+COLORS[idx%5]:'');
+btn.textContent=name;
+btn.onclick=function(){
+if(selected.has(name))selected.delete(name);else selected.add(name);
+const val=Array.from(selected).join(',');
+$('maidInput').value=val;
+display.textContent=val?'배정: '+val:'배정 없음';
+renderButtons();};
+picker.appendChild(btn);});
+const clr=document.createElement('button');
+clr.className='maid-pick-btn-clear';clr.textContent='✕ 해제';
+clr.onclick=function(){selected.clear();$('maidInput').value='';display.textContent='배정 없음';renderButtons();};
+picker.appendChild(clr);}
+renderButtons();
+display.textContent=currentMaid?'배정: '+currentMaid:'배정 없음';
+}
 function closeModal(e){if(e.target.id==='roomModal'){$('roomModal').classList.remove('open');S.room=null;}}
 function selStatus(s){S.status=s;updBtns();}
 
