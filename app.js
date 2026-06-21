@@ -680,7 +680,7 @@ function renderTodayInspectorBar(){
   if(!bar)return;
   bar.style.display=S.role==='admin'?'flex':'none';
   const inspectors=S.maids.filter(m=>m);
-  bar.innerHTML='<span style="color:var(--text2);font-size:13px;margin-right:8px;">🔍 오늘의 인스펝터:</span>'+
+  bar.innerHTML='<span style="color:var(--text2);font-size:13px;margin-right:8px;">🔍 오늘의 인스펙터:</span>'+
     inspectors.map(function(name){
       const active=S.todayInspector===name;
       return '<button'+(active?' style="background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:20px;padding:4px 14px;font-size:13px;cursor:pointer;margin-right:6px;"':' style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:13px;cursor:pointer;margin-right:6px;"')+' onclick="setTodayInspectorUI(\''+name+'\')">'  +(name[0].toUpperCase()+name.slice(1))+'</button>';
@@ -694,7 +694,7 @@ function renderTodayInspectorBar(){
 }
 async function setTodayInspectorUI(name){
   const r=await api({action:'setTodayInspector',inspector:name});
-  if(r.ok){S.todayInspector=name;renderTodayInspectorBar();toast(name?'인스펝터: '+name+' 지정':'인스펝터 해제');}
+  if(r.ok){S.todayInspector=name;renderTodayInspectorBar();toast(name?'인스펙터: '+name+' 지정':'인스펙터 해제');}
   else toast('오류');
 }
 async function confirmReset(){
