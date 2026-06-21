@@ -372,11 +372,11 @@ function fmtCardTime(iso){
 if(!iso)return'';
 const d=new Date(iso);
 const now=new Date();
-const isToday=d.toLocaleDateString('ko-KR')===now.toLocaleDateString('ko-KR');
+const isToday=d.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'})===now.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'});
 if(isToday){
-return d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+return d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 }else{
-return d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})+' '+d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+return d.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric'})+' '+d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 }
 }
 const MAID_COLORS = ['#06b6d4','#a78bfa','#fb923c','#f472b6','#facc15'];
@@ -741,7 +741,7 @@ box.scrollTop=box.scrollHeight;
 }
 async function sendMsg(){const inp=$('chatInput');const m=inp.value.trim();if(!m)return;inp.value='';try{await api({action:'sendChat',sender:S.name,role:S.role,message:m});await loadChat(true);}catch(e){toast('전송실패');}}
 function showTab(tab){document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='rooms')===(i===0)));$('tabRooms').style.display=tab==='rooms'?'block':'none';$('tabChat').style.display=tab==='chat'?'block':'none';if(tab==='chat'){S.chatSince=null;$('chatMsgs').innerHTML='';loadChat();}}
-function fmt(iso){if(!iso)return'';return new Date(iso).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+function fmt(iso){if(!iso)return'';return new Date(iso).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 function requestNotifPermission(){
 if(!('Notification' in window)){toast('이 브라우저는 알림을 지원하지 않습니다');return;}
 Notification.requestPermission().then(function(perm){
@@ -1059,11 +1059,11 @@ $('reportFrom').value=fmt(w);$('reportTo').value=fmt(d);
 
 function fmtTime(ts){
 if(!ts)return'';
-return new Date(ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+return new Date(ts).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 function fmtTimeOnly(ts){
 if(!ts)return'';
-return new Date(ts).toLocaleString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+return new Date(ts).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 }
 function calcDuration(startTs,endTs){
 if(!startTs||!endTs)return'';
