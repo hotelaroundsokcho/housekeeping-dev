@@ -52,8 +52,16 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 .maid-stat-bar{height:100%;background:var(--vacant);border-radius:4px;transition:width .4s ease;}
 .maid-stat-pct{font-size:10px;color:var(--text2);}
 .filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
-.filter-btn{padding:6px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;}
-.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.filter-btn{padding:6px 13px;border-radius:20px;border:2px solid transparent;background:#ede8de;color:#2c2416;font-size:13px;cursor:pointer;font-weight:600;transition:opacity .15s;}
+.filter-btn:hover{opacity:.85;}
+.filter-btn[data-filter='all']{background:#7c5c2e;border-color:#5c4321;color:#fff;}
+.filter-btn[data-filter='occupied']{background:#9d174d;border-color:#831843;color:#fff;}
+.filter-btn[data-filter='uncleaned']{background:#b91c1c;border-color:#7f1d1d;color:#fff;}
+.filter-btn[data-filter='cleaning']{background:#a16207;border-color:#713f12;color:#fff;}
+.filter-btn[data-filter='inspection']{background:#5b21b6;border-color:#3b0764;color:#fff;}
+.filter-btn[data-filter='vacant']{background:#15803d;border-color:#052e16;color:#fff;}
+.filter-btn[data-filter='broken']{background:#c2410c;border-color:#7c2d12;color:#fff;}
+.filter-btn.active{opacity:1;box-shadow:0 0 0 3px rgba(0,0,0,.15);}
 .select-mode-btn{width:100%;padding:11px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--occupied);border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:10px;}
 .reset-btn{width:100%;padding:11px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--uncleaned);border-radius:var(--radius);font-size:13px;cursor:pointer;margin-bottom:10px;}
 .change-pin-btn{width:100%;padding:10px;background:rgba(108,143,255,.1);border:1px solid rgba(108,143,255,.3);color:var(--accent);border-radius:var(--radius);font-size:13px;cursor:pointer;margin-bottom:16px;}
@@ -289,11 +297,11 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 </div>
 <div class="filter-row">
 <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">전체 / All</button>
-<button class="filter-btn" data-filter="occupied" onclick="setFilter('occupied')">🔵 재실 / Occupied</button>
+<button class="filter-btn" data-filter="occupied" onclick="setFilter('occupied')">🩷 재실 / Occupied</button>
 <button class="filter-btn" data-filter="uncleaned" onclick="setFilter('uncleaned')">🔴 미정비 / Uncleaned</button>
 <button class="filter-btn" data-filter="cleaning" onclick="setFilter('cleaning')">🟡 정비중 / Cleaning</button>
 <button class="filter-btn" data-filter="inspection" onclick="setFilter('inspection')">🟣 인스펙션 / Inspection</button>
-<button class="filter-btn" data-filter="vacant" onclick="setFilter('vacant')">💙 공실완료 / Vacant</button>
+<button class="filter-btn" data-filter="vacant" onclick="setFilter('vacant')">💚 공실완료 / Vacant</button>
 <button class="filter-btn" data-filter="broken" onclick="setFilter('broken')">🔶 고장 / Broken</button>
 </div>
 <button class="select-mode-btn" id="selectModeBtn" style="display:none" onclick="toggleSelectMode()">☑ 객실 선택 (일괄 상태변경)</button>
