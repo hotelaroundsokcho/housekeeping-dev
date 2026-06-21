@@ -382,12 +382,12 @@ return d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})+' '+d.toLoc
 const MAID_COLORS = ['#06b6d4','#a78bfa','#fb923c','#f472b6','#facc15'];
 
 const STATUS_CARD_THEME = {
-occupied: {bg:'#fce7f3', border:'#f472b6', numColor:'#831843', dimColor:'#9d174d'},
-uncleaned: {bg:'#fee2e2', border:'#ef4444', numColor:'#7f1d1d', dimColor:'#991b1b'},
-cleaning: {bg:'#fef3c7', border:'#f59e0b', numColor:'#78350f', dimColor:'#92400e'},
-inspection: {bg:'#ede9fe', border:'#94a3b8', numColor:'#3b0764', dimColor:'#4c1d95'},
-vacant: {bg:'#dcfce7', border:'#4ade80', numColor:'#14532d', dimColor:'#166534'},
-broken: {bg:'#ffedd5', border:'#ff6b35', numColor:'#7c2d12', dimColor:'#9a3412'},
+occupied: {bg:'#fce7f3', border:'#f472b6', numColor:'#500724', dimColor:'#831843'},
+uncleaned: {bg:'#fee2e2', border:'#ef4444', numColor:'#450a0a', dimColor:'#7f1d1d'},
+cleaning: {bg:'#fef9c3', border:'#fde047', numColor:'#422006', dimColor:'#713f12'},
+inspection: {bg:'#ede9fe', border:'#94a3b8', numColor:'#2e1065', dimColor:'#3b0764'},
+vacant: {bg:'#dcfce7', border:'#4ade80', numColor:'#052e16', dimColor:'#14532d'},
+broken: {bg:'#ffedd5', border:'#ff6b35', numColor:'#431407', dimColor:'#7c2d12'},
 cleaned: {bg:'#ede9fe', border:'#94a3b8', numColor:'#3b0764', dimColor:'#4c1d95'}
 };
 
