@@ -66,14 +66,14 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 .rooms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
 @media(min-width:600px){.rooms-grid{grid-template-columns:repeat(3,1fr);}}
 .room-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .15s;}
-.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.room-card.occupied::before{background:var(--occupied);}
-.room-card.uncleaned::before{background:var(--uncleaned);}
-.room-card.cleaning::before{background:var(--cleaning);}
-.room-card.inspection::before{background:var(--inspection);}
-.room-card.vacant::before{background:var(--vacant);}
-.room-card.broken::before{background:var(--broken);}
-.room-card.card-selected{border-color:var(--uncleaned);box-shadow:0 0 0 2px rgba(239,68,68,.3);}
+.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;}
+.room-card.occupied{background:#fce7f3;border-color:#f9a8d4;}.room-card.occupied::before{background:#be185d;}.room-card.uncleaned{background:#fee2e2;border-color:#fca5a5;}.room-card.cleaning{background:#fef3c7;border-color:#fcd34d;}.room-card.inspection{background:#ede9fe;border-color:#c4b5fd;}.room-card.vacant{background:#dcfce7;border-color:#86efac;}.room-card.broken{background:#ffedd5;border-color:#fdba74;}
+.room-card.uncleaned::before{background:#dc2626;}
+.room-card.cleaning::before{background:#b45309;}
+.room-card.inspection::before{background:#6d28d9;}
+.room-card.vacant::before{background:#15803d;}
+.room-card.broken::before{background:#c2410c;}
+.room-card.card-selected{border-color:#2c2416;box-shadow:0 0 0 2px rgba(44,36,22,.35);}
 .card-check{font-size:18px;position:absolute;top:8px;right:10px;color:var(--uncleaned);}
 .room-no{font-size:24px;font-weight:700;}
 .room-type-row{display:flex;align-items:center;gap:5px;margin-top:2px;}
@@ -82,12 +82,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 .bed-twin{background:rgba(168,85,247,.18);color:#c084fc;border:1px solid rgba(168,85,247,.35);}
 .bed-double{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.35);}
 .room-status{display:inline-block;margin-top:8px;padding:3px 8px;border-radius:20px;font-size:13px;font-weight:600;}
-.status-occupied{background:rgba(244,114,182,.18);color:var(--occupied);}
-.status-uncleaned{background:rgba(239,68,68,.15);color:var(--uncleaned);}
-.status-cleaning{background:rgba(245,158,11,.15);color:var(--cleaning);}
-.status-inspection{background:rgba(226,232,240,.12);color:var(--inspection);}
-.status-broken{background:rgba(255,107,53,.18);color:var(--broken);}
-.status-vacant{background:rgba(74,222,128,.15);color:var(--vacant);}
+.status-occupied{background:#be185d;color:#fff;}
+.status-uncleaned{background:#dc2626;color:#fff;}
+.status-cleaning{background:#b45309;color:#fff;}
+.status-inspection{background:#6d28d9;color:#fff;}
+.status-broken{background:#c2410c;color:#fff;}
+.status-vacant{background:#15803d;color:#fff;}
 .room-maid{font-size:13px;color:var(--text2);margin-top:4px;}
 .room-maid-badge{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:var(--text2);}
 .maid-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text2);flex-shrink:0;}
@@ -223,7 +223,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 
 .rooms-grid-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;}
 @media(max-width:400px){.rooms-grid-inner{grid-template-columns:repeat(2,1fr);}}
-.room-inspector-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(108,143,255,.15);color:var(--accent);border:1px solid rgba(108,143,255,.3);margin-bottom:3px;}
+.room-inspector-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.6);color:#4c1d95;border:1px solid rgba(108,143,255,.3);margin-bottom:3px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
