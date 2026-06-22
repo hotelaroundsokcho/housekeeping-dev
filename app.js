@@ -511,7 +511,7 @@ function buildCard(room, isDone){
     maidHtml=maidNames.map(function(name){
       const mc=getMaidColorIdx(name);
       const color=mc>=0?MAID_COLORS[mc]:null;
-      return '<div class="room-maid-badge"'+(color?' style="background:'+color+'22;color:'#000000';border-color:'+color+'44"':'')+'>'        +'<span class="maid-dot"'+(color?' style="background:'+color+'"':'')+'>'+'</span>'+esc(name)+'</div>';
+      return '<div class="room-maid-badge"'+(color?' style="background:'+color+'22;color:#000000;border-color:'+color+'44"':'')+'>'        +'<span class="maid-dot"'+(color?' style="background:'+color+'"':'')+'>'+'</span>'+esc(name)+'</div>';
     }).join('');
   }else if(room.status==='cleaning'){
     maidHtml='<div class="room-maid-badge" style="background:rgba(245,158,11,.18);color:#f59e0b;border-color:rgba(245,158,11,.5);font-weight:700;">⚠️ 미배정</div>';
