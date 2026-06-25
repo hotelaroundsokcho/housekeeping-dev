@@ -178,11 +178,9 @@ if(!r.maidName)return;
 const maids=r.maidName.split(',').map(n=>n.trim()).filter(Boolean);
 maids.forEach(function(name){
 if(!tally[name])tally[name]={done:0,wip:0,total:0};
-if(['uncleaned','cleaning','inspection','vacant','cleaned'].includes(r.status)){
 tally[name].total++;
 if(r.status==='inspection'||r.status==='vacant'||r.status==='cleaned')tally[name].done++;
 if(r.status==='cleaning')tally[name].wip++;
-}
 });
 });
 const names=Object.keys(tally);
