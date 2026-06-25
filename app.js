@@ -5,7 +5,8 @@ room:null, status:null, chatSince:null,
 isInspector:false, selectMode:false, selected:new Set(),
 assignMode:false, assignSelected:new Set(),
 todayInspector:'',
-  crossInspection:false
+  crossInspection:false,
+  maidFilter:''
 };
 let timer = null;
 const MAID_COLOR_MAP = {};
@@ -162,6 +163,10 @@ const st=r.status==='cleaned'?'inspection':r.status;
 if(c[st]!==undefined)c[st]++;
 });
 ['occupied','uncleaned','cleaning','inspection','vacant','broken'].forEach((k,i)=>$('cnt'+i).textContent=c[k]);
+const total=S.rooms.length;
+const cntAllEl=$('cntAll');
+if(cntAllEl)cntAllEl.textContent=total;
+updateStatCardHighlight();
 }
 
 function maidStats(){
@@ -187,10 +192,23 @@ names.forEach(function(name){
 const d=tally[name];
 const pct=d.total?Math.round(d.done/d.total*100):0;
 const card=document.createElement('div');card.className='maid-stat-card';
+card.dataset.maid=name;
 card.innerHTML='<div class="maid-stat-name">'+esc(name)+'</div>'+
 '<div class="maid-stat-numbers"><span class="maid-stat-done">완료 '+d.done+'</span><span class="maid-stat-wip">정비중 '+d.wip+'</span><span class="maid-stat-total">/ '+d.total+'객실</span></div>'+
 '<div class="maid-stat-bar-wrap"><div class="maid-stat-bar" style="width:'+pct+'%"></div></div>'+
 '<div class="maid-stat-pct">'+pct+'% 완료</div>';
+card.onclick=function(){
+  if(S.maidFilter===name){
+    S.maidFilter='';
+    updateMaidStatHighlight('');
+    updateStatCardHighlight();
+  }else{
+    S.maidFilter=name;
+    updateMaidStatHighlight(name);
+    document.querySelectorAll('.stat-card').forEach(c=>c.classList.remove('active-filter'));
+  }
+  render();
+};
 box.appendChild(card);
 });
 }
@@ -364,8 +382,27 @@ toast('✅ '+cnt+'개 객실 배정 완료: '+label);
 
 function setFilter(f){
 S.filter=f;
+S.maidFilter='';
 document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));
+updateStatCardHighlight();
+updateMaidStatHighlight('');
 render();
+}
+
+function updateStatCardHighlight(){
+const ids=['statCardAll','statCard0','statCard1','statCard2','statCard3','statCard4','statCard5'];
+const filters=['all','occupied','uncleaned','cleaning','inspection','vacant','broken'];
+ids.forEach((id,i)=>{
+const el=$(id);
+if(!el)return;
+el.classList.toggle('active-filter', S.filter===filters[i] && !S.maidFilter);
+});
+}
+
+function updateMaidStatHighlight(name){
+document.querySelectorAll('.maid-stat-card').forEach(c=>{
+c.classList.toggle('active-maid', !!name && c.dataset.maid===name);
+});
 }
 
 function fmtCardTime(iso){
@@ -394,6 +431,7 @@ cleaned:    {bg:'#a78bfa', border:'#7c3aed', numColor:'#ffffff', dimColor:'#0000
 function render(){
   let rooms=S.rooms.map(r=>r.status==='cleaned'?{...r,status:'inspection'}:r);
   if(S.filter!=='all')rooms=rooms.filter(x=>x.status===S.filter);
+  if(S.maidFilter)rooms=rooms.filter(x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.maidFilter.toLowerCase()));
 
   // ── 메이드 화면 전용 처리 ──
   if(S.role==='maid'){
