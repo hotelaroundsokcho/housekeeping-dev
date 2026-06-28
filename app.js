@@ -728,7 +728,7 @@ function renderTodayInspectorBar(){
       const active=S.todayInspector===name;
       const activeStyle='background:#7c5c2e;color:#faf7f2;border:none;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:500;cursor:pointer;margin-right:6px;';
       const inactiveStyle='background:transparent;color:#7a6a52;border:1.5px solid #d6cfbe;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;margin-right:6px;';
-      return '<button onclick="setTodayInspectorUI(\''+name+'\');" style="'+(active?activeStyle:inactiveStyle)+'">'+name+'</button>';
+      return '<button onclick="setTodayInspectorUI(\''+name+'\')" style="'+(active?activeStyle:inactiveStyle)+'">'+name+'</button>';
     }).join('')')+
     (S.todayInspector?'<button onclick="setTodayInspectorUI(\'\')" style="background:transparent;color:var(--text2);border:none;font-size:12px;cursor:pointer;padding:4px 8px;">✕ 해제</button>':'');
   let crossBtn=document.getElementById('crossInspBtn');
