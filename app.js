@@ -723,7 +723,7 @@ function renderTodayInspectorBar(){
   if(!bar)return;
   bar.style.display=S.role==='admin'?'flex':'none';
   const inspectors=S.maids.filter(m=>m);
-  bar.innerHTML='<span style="color:var(--text2);font-size:13px;margin-right:8px;">🔍 오늘의 인스펙터:</span>'+
+  bar.innerHTML='<span style="color:var(--text2);font-size:13px;margin-right:8px;">오늘의 인스펙터:</span>'+
     inspectors.map(function(name){
       const active=S.todayInspector===name;
       const activeStyle='background:#7c5c2e;color:#faf7f2;border:none;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:500;cursor:pointer;margin-right:6px;';
