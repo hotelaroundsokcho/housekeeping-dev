@@ -722,25 +722,33 @@ function renderTodayInspectorBar(){
   const bar=$('todayInspectorBar');
   if(!bar)return;
   bar.style.display=S.role==='admin'?'flex':'none';
-  const inspectors=S.maids.filter(m=>m);
-  bar.innerHTML='<span style="color:var(--text2);font-size:13px;margin-right:8px;">오늘의 인스펙터:</span>'+
-    inspectors.map(function(name){
-      const active=S.todayInspector===name;
-      const activeStyle='background:#7c5c2e;color:#faf7f2;border:none;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:500;cursor:pointer;margin-right:6px;';
-      const inactiveStyle='background:transparent;color:#7a6a52;border:1.5px solid #d6cfbe;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;margin-right:6px;';
-      return '<button onclick="setTodayInspectorUI(\''+name+'\')" style="'+(active?activeStyle:inactiveStyle)+'">'+name+'</button>';
-    }).join('')')+
-    (S.todayInspector?'<button onclick="setTodayInspectorUI(\'\')" style="background:transparent;color:var(--text2);border:none;font-size:12px;cursor:pointer;padding:4px 8px;">✕ 해제</button>':'');
-  let crossBtn=document.getElementById('crossInspBtn');
-  if(!crossBtn){crossBtn=document.createElement('button');crossBtn.id='crossInspBtn';crossBtn.style.cssText='margin-left:8px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;';bar.appendChild(crossBtn);crossBtn.onclick=toggleCrossInspection;}
-  crossBtn.textContent=S.crossInspection?'🔀 크로스 ON':'🔀 크로스 OFF';
-  crossBtn.style.background=S.crossInspection?'var(--accent)':'var(--surface2)';
-  crossBtn.style.color=S.crossInspection?'#fff':'var(--text2)';
+  if(S.role!=='admin')return;
+  const inspectors=S.maids&&S.maids.length?S.maids:['Mat','Diana'];
+  bar.innerHTML='';
+  const label=document.createElement('span');
+  label.textContent='오늘의 인스펝터:';
+  label.style.cssText='font-size:13px;color:var(--text2);margin-right:8px;align-self:center;';
+  bar.appendChild(label);
+  const activeStyle='background:#7c5c2e;color:#faf7f2;border:none;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:500;cursor:pointer;margin-right:6px;';
+  const inactiveStyle='background:transparent;color:#7a6a52;border:1.5px solid #d6cfbe;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;margin-right:6px;';
+  inspectors.forEach(function(n){
+    const btn=document.createElement('button');
+    btn.textContent=n;
+    btn.dataset.name=n;
+    btn.style.cssText=S.todayInspector===n?activeStyle:inactiveStyle;
+    btn.addEventListener('click',function(){setTodayInspectorUI(this.dataset.name);});
+    bar.appendChild(btn);
+  });
+  const clearBtn=document.createElement('button');
+  clearBtn.textContent='해제';
+  clearBtn.style.cssText=inactiveStyle+'color:#991b1b;border-color:#fca5a5;';
+  clearBtn.addEventListener('click',function(){setTodayInspectorUI('');});
+  bar.appendChild(clearBtn);
 }
-async function setTodayInspectorUI(name){
-  const r=await api({action:'setTodayInspector',inspector:name});
-  if(r.ok){S.todayInspector=name;renderTodayInspectorBar();toast(name?'인스펙터: '+name+' 지정':'인스펙터 해제');}
-  else toast('오류');
+function setTodayInspectorUI(n){
+  S.todayInspector=n;
+  api({action:'setTodayInspector',name:n});
+  renderTodayInspectorBar();
 }
 async function confirmReset(){
 if(!confirm('⚠️ 전체 객실을 공실완료로 초기화합니다.\n재실·공실완료 포함 모든 상태가 초기화됩니다.\n정말 계속하시겠습니까?'))return;
