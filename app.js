@@ -726,8 +726,10 @@ function renderTodayInspectorBar(){
   bar.innerHTML='<span style="color:var(--text2);font-size:13px;margin-right:8px;">🔍 오늘의 인스펙터:</span>'+
     inspectors.map(function(name){
       const active=S.todayInspector===name;
-      return '<button'+(active?' style="background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:20px;padding:4px 14px;font-size:13px;cursor:pointer;margin-right:6px;"':' style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:13px;cursor:pointer;margin-right:6px;"')+' onclick="setTodayInspectorUI(\''+name+'\')">'  +(name[0].toUpperCase()+name.slice(1))+'</button>';
-    }).join('')+
+      const activeStyle='background:#7c5c2e;color:#faf7f2;border:none;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:500;cursor:pointer;margin-right:6px;';
+      const inactiveStyle='background:transparent;color:#7a6a52;border:1.5px solid #d6cfbe;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;margin-right:6px;';
+      return '<button onclick="setTodayInspectorUI(\''+name+'\');" style="'+(active?activeStyle:inactiveStyle)+'">'+name+'</button>';
+    }).join('')')+
     (S.todayInspector?'<button onclick="setTodayInspectorUI(\'\')" style="background:transparent;color:var(--text2);border:none;font-size:12px;cursor:pointer;padding:4px 8px;">✕ 해제</button>':'');
   let crossBtn=document.getElementById('crossInspBtn');
   if(!crossBtn){crossBtn=document.createElement('button');crossBtn.id='crossInspBtn';crossBtn.style.cssText='margin-left:8px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;';bar.appendChild(crossBtn);crossBtn.onclick=toggleCrossInspection;}
