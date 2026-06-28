@@ -723,11 +723,11 @@ function renderTodayInspectorBar(){
   if(!bar)return;
   bar.style.display=S.role==='admin'?'flex':'none';
   if(S.role!=='admin')return;
-  const inspectors=S.maids&&S.maids.length?S.maids:['Mat','Diana'];
   bar.innerHTML='';
+  const inspectors=S.maids&&S.maids.length?S.maids:['Mat','Diana'];
   const label=document.createElement('span');
   label.textContent='오늘의 인스펝터:';
-  label.style.cssText='font-size:13px;color:var(--text2);margin-right:8px;align-self:center;';
+  label.style.cssText='font-size:13px;color:var(--text2);margin-right:8px;align-self:center;flex-shrink:0;';
   bar.appendChild(label);
   const activeStyle='background:#7c5c2e;color:#faf7f2;border:none;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:500;cursor:pointer;margin-right:6px;';
   const inactiveStyle='background:transparent;color:#7a6a52;border:1.5px solid #d6cfbe;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;margin-right:6px;';
@@ -744,6 +744,17 @@ function renderTodayInspectorBar(){
   clearBtn.style.cssText=inactiveStyle+'color:#991b1b;border-color:#fca5a5;';
   clearBtn.addEventListener('click',function(){setTodayInspectorUI('');});
   bar.appendChild(clearBtn);
+  const sep=document.createElement('span');
+  sep.style.cssText='margin:0 8px;color:var(--border);align-self:center;';
+  sep.textContent='|';
+  bar.appendChild(sep);
+  const crossBtn=document.createElement('button');
+  const crossOn=S.crossInspection;
+  crossBtn.textContent=crossOn?'크로스 ON':'크로스 OFF';
+  crossBtn.style.cssText=crossOn?activeStyle:inactiveStyle;
+  crossBtn.title='크로스 인스펝션: 정비 메이드와 다른 메이드가 점검';
+  crossBtn.addEventListener('click',function(){toggleCrossInspection();});
+  bar.appendChild(crossBtn);
 }
 function setTodayInspectorUI(n){
   S.todayInspector=n;
