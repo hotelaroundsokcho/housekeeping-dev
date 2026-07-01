@@ -758,7 +758,7 @@ function renderTodayInspectorBar(){
 }
 function setTodayInspectorUI(n){
   S.todayInspector=n;
-  api({action:'setTodayInspector',name:n});
+  api({action:'setTodayInspector',inspector:n});
   renderTodayInspectorBar();
 }
 async function confirmReset(){
@@ -1332,7 +1332,7 @@ tog.style.cssText='padding:6px 14px;border-radius:8px;border:none;cursor:pointer
 tog.textContent=isIns?'ON ✓':'OFF';
 tog.onclick=async function(){
 showLoad('저장 중...');
-await api({action:'setInspector',maidName:name,enable:!isIns});
+await api({action:'setInspector',maidName:name,active:!isIns});
 hideLoad();
 await refreshInspectorList();
 };
