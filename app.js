@@ -160,11 +160,9 @@ function stats(){
 let rooms=S.rooms;
 if(S.role==='maid'){
 rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken');
-if(S.isInspector){
-rooms=rooms.filter(x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName));
-}else{
-rooms=rooms.filter(x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()));
-}
+const isMine=x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase());
+const isMyInspection=x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName);
+rooms=S.isInspector?rooms.filter(x=>isMine(x)||isMyInspection(x)):rooms.filter(isMine);
 }
 const c={occupied:0,uncleaned:0,cleaning:0,inspection:0,vacant:0,broken:0};
 rooms.forEach(r=>{
@@ -450,13 +448,10 @@ function render(){
   // ── 메이드 화면 전용 처리 ──
   if(S.role==='maid'){
     rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken');
-    if(S.isInspector){
-      rooms=rooms.filter(x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName));
-    }else{
-      rooms=rooms.filter(x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()));
-    }
-
-    const grid=$('roomsGrid');
+    const isMine=x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase());
+    const isMyInspection=x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName);
+    rooms=S.isInspector?rooms.filter(x=>isMine(x)||isMyInspection(x)):rooms.filter(isMine);
+  }const grid=$('roomsGrid');
     grid.innerHTML='';
 
     if(rooms.length===0){
