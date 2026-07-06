@@ -482,7 +482,7 @@ function render(){
     // 진행률 헤더
     const pct=total?Math.round(doneCount/total*100):0;
     const bar=document.createElement('div');
-    bar.style.cssText='margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;';
+    bar.style.cssText='margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;grid-column:1/-1;';
     bar.innerHTML=
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
         '<span style="font-size:13px;font-weight:600;color:var(--text);">'+esc(S.name)+' 님 오늘 현황</span>'+
@@ -501,7 +501,7 @@ function render(){
     // 미완료 섹션
     if(pending.length>0){
       const ph=document.createElement('div');
-      ph.style.cssText='font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:4px 2px 8px;';
+      ph.style.cssText='font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:4px 2px 8px;grid-column:1/-1;';
       ph.textContent='미완료 / Pending · '+pending.length;
       grid.appendChild(ph);
       const pg=document.createElement('div');
@@ -513,7 +513,7 @@ function render(){
     // 완료 섹션
     if(done.length>0){
       const dh=document.createElement('div');
-      dh.style.cssText='font-size:11px;font-weight:700;color:var(--vacant);text-transform:uppercase;letter-spacing:.06em;padding:14px 2px 8px;display:flex;align-items:center;gap:6px;';
+      dh.style.cssText='font-size:11px;font-weight:700;color:var(--vacant);text-transform:uppercase;letter-spacing:.06em;padding:14px 2px 8px;display:flex;align-items:center;gap:6px;grid-column:1/-1;';
       dh.innerHTML='✅ 공실완료 / Vacant · '+done.length;
       grid.appendChild(dh);
       const dg=document.createElement('div');
