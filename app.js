@@ -602,7 +602,8 @@ modalTime.textContent=ts?'마지막 변경: '+ts:'';
 updBtns();
 document.querySelectorAll('.status-btn-admin').forEach(b=>{
 const _isSelfInspect=S.role==='maid'&&S.room&&S.room.maidName&&S.room.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase())&&S.room.status==='inspection';
-const _showAdmin=S.role==='admin'||(b.dataset.status==='vacant'&&(S.isInspector||_isSelfInspect));
+const _btnStatus=(b.getAttribute('onclick')||'').replace(/^selStatus\('/,'').replace(/'\)$/,'');
+const _showAdmin=S.role==='admin'||(_btnStatus==='vacant'&&(S.isInspector||_isSelfInspect));
 b.style.display=_showAdmin?'':'none';
 });
 if(S.role==='admin'){renderMaidPicker(S.room.maidName||'');}
