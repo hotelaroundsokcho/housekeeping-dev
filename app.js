@@ -157,13 +157,22 @@ else if(!silent)toast('로드실패');
 }
 
 function stats(){
+let rooms=S.rooms;
+if(S.role==='maid'){
+rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken');
+if(S.isInspector){
+rooms=rooms.filter(x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName));
+}else{
+rooms=rooms.filter(x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()));
+}
+}
 const c={occupied:0,uncleaned:0,cleaning:0,inspection:0,vacant:0,broken:0};
-S.rooms.forEach(r=>{
+rooms.forEach(r=>{
 const st=r.status==='cleaned'?'inspection':r.status;
 if(c[st]!==undefined)c[st]++;
 });
 ['occupied','uncleaned','cleaning','inspection','vacant','broken'].forEach((k,i)=>$('cnt'+i).textContent=c[k]);
-const total=S.rooms.length;
+const total=rooms.length;
 const cntAllEl=$('cntAll');
 if(cntAllEl)cntAllEl.textContent=total;
 updateStatCardHighlight();
