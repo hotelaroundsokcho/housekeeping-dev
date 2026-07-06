@@ -451,7 +451,7 @@ function render(){
     const isMine=x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase());
     const isMyInspection=x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName);
     rooms=S.isInspector?rooms.filter(x=>isMine(x)||isMyInspection(x)):rooms.filter(isMine);
-  }const grid=$('roomsGrid');
+    const grid=$('roomsGrid');
     grid.innerHTML='';
 
     if(rooms.length===0){
