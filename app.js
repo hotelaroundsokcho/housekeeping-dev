@@ -267,7 +267,7 @@ const detail=cardEl.querySelector('.maid-stat-detail');
 if(!detail)return;
 detail.innerHTML='<div class="maid-stat-detail-loading">불러오는 중...</div>';
 try{
-const r=await api({action:'getRoomHistory'});
+const r=await api({action:'getRoomHistory',limit:1000});
 if(!r.ok){detail.innerHTML='<div class="maid-stat-detail-loading">이력 로드 실패</div>';return;}
 detail.innerHTML=buildMaidDetailHTML(r.history||[],name);
 }catch(e){
