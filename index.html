@@ -261,6 +261,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 <div class="form-group"><label>이름 입력</label>
 <input type="text" id="maidNameInput" placeholder="등록된 이름 입력" onkeydown="if(event.key==='Enter')loginMaid()">
 </div>
+<div class="form-group"><label>비밀번호 (설정한 경우만 입력)</label>
+<input type="password" id="maidPwInput" placeholder="비밀번호" onkeydown="if(event.key==='Enter')loginMaid()">
+</div>
 <button class="btn-primary" onclick="loginMaid()">입장하기</button>
 </div>
 <div class="error-msg" id="loginError"></div>
@@ -314,6 +317,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
         <button class="maid-mgmt-btn" id="adminMgmtBtn" style="display:none" onclick="openAdminMgmtModal()">👔 관리자 명단 관리</button>
 <button class="maid-mgmt-btn" id="inspectorMgmtBtn" style="display:none" onclick="openInspectorModal()">🔎 인스펙터 관리</button>
 <button class="change-pin-btn" id="changePinBtn" style="display:none" onclick="openChangePinModal()">🔑 관리자 PIN 변경</button>
+<button class="change-pin-btn" id="maidPwBtn" style="display:none" onclick="openMaidPwModal()">🔑 내 비밀번호 설정/변경</button>
 <div id="todayInspectorBar" style="display:none;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;"></div>
 <div class="rooms-grid" id="roomsGrid"></div>
 <div id="reportBtn" style="display:none"><button class="report-btn" onclick="openReportModal()">📋 업무일지 다운로드</button></div>
@@ -416,6 +420,23 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 <div class="pin-error" id="cpError"></div>
 <button class="pin-save-btn" onclick="savePin()">변경하기</button>
 <button class="pin-cancel-btn" onclick="closeChangePinModal()">취소</button>
+</div>
+</div>
+
+<div class="modal-overlay" id="maidPwModal" onclick="closeMaidPwModal(event)">
+<div class="pin-modal">
+<div class="modal-handle"></div>
+<h3 style="margin-bottom:6px">🔑 내 비밀번호 설정</h3>
+<p style="font-size:11px;color:var(--text2);margin-bottom:18px" id="maidPwModalDesc">비밀번호를 설정하면 다음 로그인부터 이름+비밀번호로 입장합니다.</p>
+<div class="form-group" id="maidPwOldGroup" style="display:none"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">현재 비밀번호</label>
+<input type="password" class="pin-input" id="mpwCurrent" placeholder="현재 비밀번호 입력"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">새 비밀번호 (4자리 이상)</label>
+<input type="password" class="pin-input" id="mpwNew" placeholder="새 비밀번호 입력"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">새 비밀번호 확인</label>
+<input type="password" class="pin-input" id="mpwConfirm" placeholder="새 비밀번호 재입력" onkeydown="if(event.key==='Enter')saveMaidPassword()"></div>
+<div class="pin-error" id="mpwError"></div>
+<button class="pin-save-btn" onclick="saveMaidPassword()">저장하기</button>
+<button class="pin-cancel-btn" onclick="closeMaidPwModal()">취소</button>
 </div>
 </div>
 
