@@ -203,12 +203,15 @@ if(tally[name][_st]!==undefined)tally[name][_st]++;
 const names=Object.keys(tally);
 if(!names.length){box.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px">배정된 메이드 없음</div>';return;}
 box.innerHTML='';
+const openNames=new Set(Array.from(box.querySelectorAll('.maid-stat-card.open')).map(c=>c.dataset.maid));
+box.innerHTML='';
 names.forEach(function(name){
 const d=tally[name];
-const pct=d.total?Math.round(d.done/d.total*100):0;
 const card=document.createElement('div');card.className='maid-stat-card';
 card.dataset.maid=name;
-card.innerHTML='<div class="maid-stat-name">'+esc(name)+'<span style="font-size:11px;font-weight:500;color:var(--text2);margin-left:8px;">총 '+d.total+'객실</span></div>'+
+card.innerHTML='<div class="maid-stat-header">'+
+'<div class="maid-stat-main">'+
+'<div class="maid-stat-name">'+esc(name)+'<span style="font-size:11px;font-weight:500;color:var(--text2);margin-left:8px;">총 '+d.total+'객실</span></div>'+
 '<div class="maid-stat-numbers" style="flex-wrap:wrap;gap:6px 10px;">'+
 (d.occupied?'<span style="color:var(--occupied);font-size:12px;font-weight:600;">재실 '+d.occupied+'</span>':'')+
 (d.uncleaned?'<span style="color:var(--uncleaned);font-size:12px;font-weight:600;">미정비 '+d.uncleaned+'</span>':'')+
@@ -218,8 +221,13 @@ card.innerHTML='<div class="maid-stat-name">'+esc(name)+'<span style="font-size:
 (d.broken?'<span style="color:var(--broken);font-size:12px;font-weight:600;">고장 '+d.broken+'</span>':'')+
 '</div>'+
 '<div class="maid-stat-bar-wrap"><div class="maid-stat-bar" style="width:'+(d.total?Math.round(d.vacant/d.total*100):0)+'%"></div></div>'+
-'<div class="maid-stat-pct">'+(d.total?Math.round(d.vacant/d.total*100):0)+'% 공실완료</div>';
-card.onclick=function(){
+'<div class="maid-stat-pct">'+(d.total?Math.round(d.vacant/d.total*100):0)+'% 공실완료</div>'+
+'</div>'+
+'<button type="button" class="maid-stat-toggle" aria-label="상세 이력 펼치기">▾</button>'+
+'</div>'+
+'<div class="maid-stat-detail" id="maidDetail_'+encodeURIComponent(name)+'"></div>';
+const mainEl=card.querySelector('.maid-stat-main');
+mainEl.onclick=function(){
   if(S.maidFilter===name){
     S.maidFilter='';
     updateMaidStatHighlight('');
@@ -231,8 +239,119 @@ card.onclick=function(){
   }
   render();
 };
+const toggleBtn=card.querySelector('.maid-stat-toggle');
+toggleBtn.onclick=function(e){
+  e.stopPropagation();
+  toggleMaidDetail(name,card);
+};
 box.appendChild(card);
+if(openNames.has(name)){
+  card.classList.add('open');
+  loadMaidDetail(name,card);
+}
 });
+}
+
+// ───────── 메이드별 현황 카드 — 상세 이력 아코디언 ─────────
+async function toggleMaidDetail(name,cardEl){
+if(cardEl.classList.contains('open')){
+  cardEl.classList.remove('open');
+  return;
+}
+cardEl.classList.add('open');
+await loadMaidDetail(name,cardEl);
+}
+
+async function loadMaidDetail(name,cardEl){
+const detail=cardEl.querySelector('.maid-stat-detail');
+if(!detail)return;
+detail.innerHTML='<div class="maid-stat-detail-loading">불러오는 중...</div>';
+try{
+const r=await api({action:'getRoomHistory'});
+if(!r.ok){detail.innerHTML='<div class="maid-stat-detail-loading">이력 로드 실패</div>';return;}
+detail.innerHTML=buildMaidDetailHTML(r.history||[],name);
+}catch(e){
+detail.innerHTML='<div class="maid-stat-detail-loading">이력 로드 실패</div>';
+}
+}
+
+function tlBadge(statusKey){
+const key=statusKey==='cleaned'?'inspection':statusKey;
+const label=KR_CHAT[key]||key||'';
+const theme=STATUS_CARD_THEME[key]||STATUS_CARD_THEME.inspection;
+return '<span style="font-size:10px;padding:1px 7px;border-radius:8px;font-weight:600;background:'+theme.bg+';color:'+theme.numColor+';white-space:nowrap;">'+esc(label)+'</span>';
+}
+
+function buildMaidDetailHTML(history,name){
+const todayStr=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+const nameLc=name.toLowerCase();
+const todays=history.filter(function(h){
+if(!h.changedBy||h.changedBy.toLowerCase()!==nameLc)return false;
+const d=new Date(h.timestamp).toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+return d===todayStr;
+}).sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
+
+const byRoom={};
+todays.forEach(function(h){
+const no=String(h.roomNo);
+if(!byRoom[no])byRoom[no]=[];
+byRoom[no].push(h);
+});
+
+let doneCnt=0,wipCnt=0;
+const durations=[];
+Object.keys(byRoom).forEach(function(no){
+let cleaningTs=null;
+byRoom[no].forEach(function(h){
+const to=h.toStatus==='cleaned'?'inspection':h.toStatus;
+if(to==='cleaning'){cleaningTs=h.timestamp;wipCnt++;}
+if(to==='inspection'||to==='vacant'){
+doneCnt++;
+if(cleaningTs){
+const diff=new Date(h.timestamp)-new Date(cleaningTs);
+if(diff>0)durations.push(diff);
+}
+}
+});
+});
+const avgMin=durations.length?Math.round(durations.reduce(function(a,b){return a+b;},0)/durations.length/60000):null;
+
+const roomMap={};
+S.rooms.forEach(function(rm){roomMap[String(rm.roomNo)]=rm;});
+
+let html='<div class="hist-stats-row">'+
+'<div class="hist-stat-box"><div class="hist-stat-num">'+doneCnt+'</div><div class="hist-stat-label">공실완료/인스펙션</div></div>'+
+'<div class="hist-stat-box"><div class="hist-stat-num">'+wipCnt+'</div><div class="hist-stat-label">정비중</div></div>'+
+'<div class="hist-stat-box"><div class="hist-stat-num">'+(avgMin!=null?avgMin+'분':'-')+'</div><div class="hist-stat-label">평균 정비시간</div></div>'+
+'</div>';
+
+const roomNos=Object.keys(byRoom);
+if(!roomNos.length){
+html+='<div style="font-size:12px;color:var(--text2);padding:6px 0;">오늘 작업 이력이 없습니다</div>';
+return html;
+}
+html+='<div class="hist-section-title">오늘 객실별 작업 이력</div>';
+roomNos.forEach(function(no){
+const rm=roomMap[no];
+const typeCode=rm?rm.typeCode:'';
+let bedLabel='';
+if(typeCode&&typeCode.length>=3){
+const c=typeCode[2].toUpperCase();
+if(c==='T')bedLabel='Twin';else if(c==='D')bedLabel='Double';
+}
+html+='<div style="margin:8px 0 4px;"><span style="font-size:12px;font-weight:600;color:var(--text);margin-right:6px;">'+esc(no)+'</span><span style="font-size:11px;color:var(--text2);">'+esc(bedLabel)+'</span></div>';
+const events=byRoom[no];
+events.forEach(function(h,i){
+const isLast=i===events.length-1;
+html+='<div class="tl-item">'+
+'<div class="tl-left"><div class="tl-dot"></div>'+(isLast?'':'<div class="tl-line"></div>')+'</div>'+
+'<div class="tl-body">'+
+'<div class="tl-detail">'+tlBadge(h.fromStatus)+'<span style="color:var(--text2);font-size:11px;">→</span>'+tlBadge(h.toStatus)+'</div>'+
+'<div class="tl-time">'+fmtTimeOnly(h.timestamp)+' KST</div>'+
+'</div></div>';
+});
+});
+return html;
 }
 // ───────── 일괄 상태변경 선택 모드 ─────────
 function toggleSelectMode(){
