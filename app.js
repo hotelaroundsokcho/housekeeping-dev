@@ -1301,6 +1301,12 @@ const role=sessionStorage.getItem('hk_role');
 const name=sessionStorage.getItem('hk_name');
 if(role&&name){S.role=role;S.name=name;S.isInspector=sessionStorage.getItem('hk_inspector')==='1';S.maidPasswordSet=sessionStorage.getItem('hk_maid_pwset')==='1';go();}
 })();
+(async function loadAdminButtons(){
+try{
+const r=await api({action:'getAdmins'});
+if(r.ok&&r.admins&&r.admins.length)renderAdminNameBtns(r.admins);
+}catch(e){}
+})();
 
 // ── 업무일지 다운로드 ──
 function openReportModal(){
