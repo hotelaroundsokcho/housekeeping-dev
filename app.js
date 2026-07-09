@@ -8,7 +8,8 @@ todayInspector:'',
   crossInspection:false,
   maidFilter:'',
 maidPasswordSet:false,
-pendingAdminName:null
+pendingAdminName:null,
+maidDetailDate:{}
 };
 let timer = null;
 const MAID_COLOR_MAP = {};
@@ -268,14 +269,26 @@ cardEl.classList.add('open');
 await loadMaidDetail(name,cardEl);
 }
 
-async function loadMaidDetail(name,cardEl){
+async function loadMaidDetail(name,cardEl,dateStr){
 const detail=cardEl.querySelector('.maid-stat-detail');
 if(!detail)return;
 detail.innerHTML='<div class="maid-stat-detail-loading">불러오는 중...</div>';
 try{
 const r=await api({action:'getRoomHistory',limit:1000});
 if(!r.ok){detail.innerHTML='<div class="maid-stat-detail-loading">이력 로드 실패</div>';return;}
-detail.innerHTML=buildMaidDetailHTML(r.history||[],name);
+if(!dateStr){
+  dateStr=(S.maidDetailDate&&S.maidDetailDate[name])?S.maidDetailDate[name]:new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+}
+const hist=r.history||[];
+detail.innerHTML=buildMaidDetailHTML(hist,name,dateStr);
+const dateInput=detail.querySelector('.maid-detail-date-input');
+if(dateInput){
+  dateInput.onchange=function(){
+    if(!S.maidDetailDate)S.maidDetailDate={};
+    S.maidDetailDate[name]=dateInput.value;
+    loadMaidDetail(name,cardEl,dateInput.value);
+  };
+}
 }catch(e){
 detail.innerHTML='<div class="maid-stat-detail-loading">이력 로드 실패</div>';
 }
@@ -288,13 +301,24 @@ const theme=STATUS_CARD_THEME[key]||STATUS_CARD_THEME.inspection;
 return '<span style="font-size:10px;padding:1px 7px;border-radius:8px;font-weight:600;background:'+theme.bg+';color:'+theme.numColor+';white-space:nowrap;">'+esc(label)+'</span>';
 }
 
-function buildMaidDetailHTML(history,name){
+function buildMaidDetailHTML(history,name,dateStr){
 const todayStr=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+const tomorrowStr=new Date(Date.now()+86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+const selDate=dateStr||todayStr;
+let minDate=selDate;
+history.forEach(function(h){
+const dt=new Date(h.timestamp);
+if(isNaN(dt.getTime()))return;
+const ds=dt.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+if(ds<minDate)minDate=ds;
+});
 const nameLc=name.toLowerCase();
 const todays=history.filter(function(h){
 if(!h.changedBy||h.changedBy.toLowerCase()!==nameLc)return false;
-const d=new Date(h.timestamp).toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
-return d===todayStr;
+const dt=new Date(h.timestamp);
+if(isNaN(dt.getTime()))return false;
+const d=dt.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+return d===selDate;
 }).sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
 
 const byRoom={};
@@ -325,7 +349,15 @@ const avgMin=durations.length?Math.round(durations.reduce(function(a,b){return a
 const roomMap={};
 S.rooms.forEach(function(rm){roomMap[String(rm.roomNo)]=rm;});
 
-let html='<div class="hist-stats-row">'+
+const dateObj=new Date(selDate+'T00:00:00+09:00');
+const dateLabel=(selDate===todayStr)?'오늘':((dateObj.getMonth()+1)+'월 '+dateObj.getDate()+'일');
+
+let html='<div class="maid-detail-date-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'+
+'<span style="font-size:12px;color:var(--text2);">조회 날짜</span>'+
+'<input type="date" class="maid-detail-date-input" value="'+esc(selDate)+'" min="'+esc(minDate)+'" max="'+esc(tomorrowStr)+'" style="font-size:12px;padding:3px 6px;">'+
+'</div>';
+
+html+='<div class="hist-stats-row">'+
 '<div class="hist-stat-box"><div class="hist-stat-num">'+doneCnt+'</div><div class="hist-stat-label">공실완료/인스펙션</div></div>'+
 '<div class="hist-stat-box"><div class="hist-stat-num">'+wipCnt+'</div><div class="hist-stat-label">정비중</div></div>'+
 '<div class="hist-stat-box"><div class="hist-stat-num">'+(avgMin!=null?avgMin+'분':'-')+'</div><div class="hist-stat-label">평균 정비시간</div></div>'+
@@ -333,10 +365,10 @@ let html='<div class="hist-stats-row">'+
 
 const roomNos=Object.keys(byRoom);
 if(!roomNos.length){
-html+='<div style="font-size:12px;color:var(--text2);padding:6px 0;">오늘 작업 이력이 없습니다</div>';
+html+='<div style="font-size:12px;color:var(--text2);padding:6px 0;">'+esc(dateLabel)+' 작업 이력이 없습니다</div>';
 return html;
 }
-html+='<div class="hist-section-title">오늘 객실별 작업 이력</div>';
+html+='<div class="hist-section-title">'+esc(dateLabel)+' 객실별 작업 이력</div>';
 roomNos.forEach(function(no){
 const rm=roomMap[no];
 const typeCode=rm?rm.typeCode:'';
