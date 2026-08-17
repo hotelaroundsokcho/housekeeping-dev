@@ -600,7 +600,7 @@ const MAID_COLORS = ['#06b6d4','#a78bfa','#fb923c','#f472b6','#facc15'];
 const STATUS_CARD_THEME = {
 occupied:   {bg:'#f9a8d4', border:'#ec4899', numColor:'#ffffff', dimColor:'#000000'},
 uncleaned:  {bg:'#f87171', border:'#dc2626', numColor:'#ffffff', dimColor:'#000000'},
-cleaning:   {bg:'#fcd34d', border:'#f59e0b', numColor:'#1c1200', dimColor:'#000000'},
+cleaning:   {bg:'#3d2b12', border:'#5a4420', numColor:'#fbbf6a', dimColor:'#000000'},
 inspection: {bg:'#a78bfa', border:'#7c3aed', numColor:'#ffffff', dimColor:'#000000'},
 vacant:     {bg:'#4ade80', border:'#16a34a', numColor:'#022c16', dimColor:'#000000'},
 broken:     {bg:'#fb923c', border:'#ea580c', numColor:'#ffffff', dimColor:'#000000'},
