@@ -246,7 +246,6 @@ if(tally[name][_st]!==undefined)tally[name][_st]++;
 });
 const names=Object.keys(tally);
 if(!names.length){box.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px">배정된 메이드 없음</div>';return;}
-box.innerHTML='';
 const openNames=new Set(Array.from(box.querySelectorAll('.maid-stat-card.open')).map(c=>c.dataset.maid));
 box.innerHTML='';
 names.forEach(function(name){
