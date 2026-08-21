@@ -32,10 +32,10 @@ cleaned:'인스펙션필요 / Inspection'
 };
 
 const LANG={
-  ko:{tabStatus:'상태변경',tabNote:'메모',tabHist:'이력',cleaning:'정비중',inspection:'인스펙션필요',save:'저장',logout:'로그아웃',enter:'입장하기',loading:'로딩 중...',processing:'처리 중...',authenticating:'인증 중...',notePlaceholder:'특이사항...',saveSuccess:'저장되었습니다',saveFail:'저장 실패',loadFail:'로드실패',error:'오류',myPassword:'내 비밀번호 설정/변경'},
-  en:{tabStatus:'Status',tabNote:'Notes',tabHist:'History',cleaning:'Cleaning',inspection:'Inspection',save:'Save',logout:'Log out',enter:'Enter',loading:'Loading...',processing:'Processing...',authenticating:'Authenticating...',notePlaceholder:'Notes...',saveSuccess:'Saved',saveFail:'Save failed',loadFail:'Load failed',error:'Error',myPassword:'Set/Change my password'},
-  mn:{tabStatus:'Төлөв өөрчлөх',tabNote:'Тэмдэглэл',tabHist:'Түүх',cleaning:'Цэвэрлэж байна',inspection:'Шалгалт шаардлагатай',save:'Хадгалах',logout:'Гарах',enter:'Орох',loading:'Ачааллаж байна...',processing:'Боловсруулж байна...',authenticating:'Баталгаажуулж байна...',notePlaceholder:'Онцлог зүйл...',saveSuccess:'Хадгалагдлаа',saveFail:'Хадгалахад алдаа гарлаа',loadFail:'Ачаалахад алдаа гарлаа',error:'Алдаа',myPassword:'Миний нууц үг тохируулах/солих'},
-  ru:{tabStatus:'Изменить статус',tabNote:'Заметки',tabHist:'История',cleaning:'Уборка',inspection:'Требуется проверка',save:'Сохранить',logout:'Выйти',enter:'Войти',loading:'Загрузка...',processing:'Обработка...',authenticating:'Проверка...',notePlaceholder:'Особые заметки...',saveSuccess:'Сохранено',saveFail:'Ошибка сохранения',loadFail:'Ошибка загрузки',error:'Ошибка',myPassword:'Изменить мой пароль'},
+  ko:{tabStatus:'상태변경',tabNote:'메모',tabHist:'이력',cleaning:'정비중',inspection:'인스펙션필요',vacant:'공실완료',save:'저장',logout:'로그아웃',enter:'입장하기',loading:'로딩 중...',processing:'처리 중...',authenticating:'인증 중...',notePlaceholder:'특이사항...',saveSuccess:'저장되었습니다',saveFail:'저장 실패',loadFail:'로드실패',error:'오류',myPassword:'내 비밀번호 설정/변경'},
+  en:{tabStatus:'Status',tabNote:'Notes',tabHist:'History',cleaning:'Cleaning',inspection:'Inspection',vacant:'Vacant',save:'Save',logout:'Log out',enter:'Enter',loading:'Loading...',processing:'Processing...',authenticating:'Authenticating...',notePlaceholder:'Notes...',saveSuccess:'Saved',saveFail:'Save failed',loadFail:'Load failed',error:'Error',myPassword:'Set/Change my password'},
+  mn:{tabStatus:'Төлөв өөрчлөх',tabNote:'Тэмдэглэл',tabHist:'Түүх',cleaning:'Цэвэрлэж байна',inspection:'Шалгалт шаардлагатай',vacant:'Дууссан',save:'Хадгалах',logout:'Гарах',enter:'Орох',loading:'Ачааллаж байна...',processing:'Боловсруулж байна...',authenticating:'Баталгаажуулж байна...',notePlaceholder:'Онцлог зүйл...',saveSuccess:'Хадгалагдлаа',saveFail:'Хадгалахад алдаа гарлаа',loadFail:'Ачаалахад алдаа гарлаа',error:'Алдаа',myPassword:'Миний нууц үг тохируулах/солих'},
+  ru:{tabStatus:'Изменить статус',tabNote:'Заметки',tabHist:'История',cleaning:'Уборка',inspection:'Требуется проверка',vacant:'Готово',save:'Сохранить',logout:'Выйти',enter:'Войти',loading:'Загрузка...',processing:'Обработка...',authenticating:'Проверка...',notePlaceholder:'Особые заметки...',saveSuccess:'Сохранено',saveFail:'Ошибка сохранения',loadFail:'Ошибка загрузки',error:'Ошибка',myPassword:'Изменить мой пароль'},
 };
 function t(key){var l=(LANG[S.lang]&&LANG[S.lang][key])?LANG[S.lang][key]:null;return l!==null?l:(LANG.ko[key]||key);}
 function applyMaidLang(){
@@ -43,6 +43,8 @@ function applyMaidLang(){
   var lb=$('logoutBtn');if(lb)lb.textContent=t('logout');
   var sc=document.querySelector('#statusBtnCleaning .sbLabel');if(sc)sc.textContent=t('cleaning');
   var si=document.querySelector('#statusBtnInspection .sbLabel');if(si)si.textContent=t('inspection');
+  var sv=document.querySelector('#statusBtnVacant .sbLabel');if(sv)sv.textContent=t('vacant');
+  var sb=$('modalSaveBtn');if(sb)sb.textContent=t('save')+' / Save';
   var tt=document.querySelector('#mTabs [data-tab=\"status\"]');if(tt)tt.textContent=t('tabStatus');
   var tn=document.querySelector('#mTabs [data-tab=\"note\"]');if(tn)tn.textContent=t('tabNote');
   var th=document.querySelector('#mTabs [data-tab=\"hist\"]');if(th)th.textContent=t('tabHist');
