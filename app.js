@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbysndey2dNLQUxqOVjYwTjOgmLZiv0Ot1XmJhSIF8aVRZHZiioPODO5AtWaB5vnXfBt/exec';
+const API = 'https://script.google.com/macros/s/AKfycbxXvijGfTXZ4tBnqizmhMS5hDlG4ZkOldsUV_T5eTq6-zSeMoRauGIvMRGxl7aWlMTK/exec';
 let S = {
 role:null, name:'', rooms:[], filter:'all',
 room:null, status:null, chatSince:null,
