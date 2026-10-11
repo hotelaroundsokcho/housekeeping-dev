@@ -270,6 +270,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 
 .rooms-grid-inner{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:4px;}
 .room-inspector-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.6);color:#4c1d95;border:1px solid rgba(108,143,255,.3);margin-bottom:3px;}
+
+.room-stay-badge{margin-top:4px;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;display:inline-block}
+.room-stay-badge.stay-unconfirmed{background:rgba(196,67,47,.16);color:#C4432F;border:1px solid rgba(196,67,47,.45)}
+.room-stay-badge.stay-confirmed{background:rgba(35,120,90,.14);color:#23785A;border:1px solid rgba(35,120,90,.4)}
+.room-stay-badge.stay-date{background:rgba(120,120,120,.15);color:var(--text2);border:1px solid var(--border)}
+.room-stay-badge.stay-extended{background:rgba(109,75,184,.15);color:#6D4BB8;border:1px solid rgba(109,75,184,.4)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -330,6 +336,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 <button class="select-mode-btn" id="batchModeBtn" style="display:none" onclick="toggleBatchMode()">☑ 일괄 작업 (상태변경·배정)</button>
 <button class="maid-mgmt-btn" id="settingsBtn" style="display:none" onclick="openSettingsModal()">⚙️ 설정 / Settings</button>
 <button class="change-pin-btn" id="maidPwBtn" style="display:none" onclick="openMaidPwModal()">🔑 내 비밀번호 설정/변경</button>
+<div id="checkoutBoard" style="display:none;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;"></div>
 <div id="todayInspectorBar" style="display:none;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;"></div>
 <div class="rooms-grid" id="roomsGrid"></div>
 
@@ -397,6 +404,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 </div>
 </div>
 <div class="modal-section" id="maidSec"><label>메이드 배정 (관리자)</label><div class="maid-picker" id="maidPicker"></div><div class="maid-selected-display" id="maidSelectedDisplay"></div><input type="hidden" id="maidInput"></div>
+<div class="modal-section" id="stayDateSection" style="display:none"><label>퇴실 예정일 / Check-out date</label><div style="display:flex;gap:8px"><input type="date" id="stayDateInput" style="flex:1;padding:8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;"><button type="button" onclick="saveStayDate()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">변경</button></div><div id="stayDateHint" style="font-size:11px;color:var(--text2);margin-top:6px"></div></div>
 <div class="modal-section" id="inspectorOverrideSection" style="display:none"><label>🔍 인스펙터 변경 / Change Inspector</label><select id="inspectorOverridePicker" style="width:100%;padding:8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;" onchange="this.dataset.changed='1'"></select></div>
 </div>
 <div class="modal-tab-pane" id="mPaneNote">

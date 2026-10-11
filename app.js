@@ -202,10 +202,56 @@ if(tab&&tab.textContent.includes('객실'))loadRooms(true);
 else loadChat(true);
 },15000);
 }
+async function loadStays(){
+try{
+const r=await api({action:'getStays'});
+if(r&&r.ok&&Array.isArray(r.stays)){
+const m={};
+r.stays.forEach(function(s){m[String(s.roomNo)]=s;});
+S.stays=m;
+S.stayToday=r.today||'';
+}
+}catch(e){}
+}
+
+async function saveStayDate(){
+if(!S.room||S.role!=='admin')return;
+const d=$('stayDateInput').value;
+if(!d){toast('날짜를 선택하세요');return;}
+showLoad('저장 중...');
+const r=await api({action:'setStay',roomNo:S.room.roomNo,checkoutDate:d,updaterName:S.name,updaterRole:S.role});
+hideLoad();
+if(r&&r.ok){
+toast('✅ 퇴실예정일 '+d+' 저장');
+await loadStays();render();renderCheckoutBoard();
+}else{toast('저장 실패: '+((r&&r.error)||'알 수 없는 오류'));}
+}
+
+async function renderCheckoutBoard(){
+const box=$('checkoutBoard');
+if(!box)return;
+if(S.role!=='admin'){box.style.display='none';return;}
+const r=await api({action:'getCheckoutBoard'});
+if(!r||!r.ok){box.style.display='none';return;}
+const hm=function(t){return t?String(t).slice(11,16):'';};
+const names=function(list){return list.length?list.map(function(x){return esc(x.roomNo)+'호';}).join(', '):'없음';};
+box.style.display='block';
+box.innerHTML=
+'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
+'<b style="font-size:13px">오늘 퇴실 현황 · '+esc(r.today)+'</b>'+
+'<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;'+(r.autoFlipEnabled?'background:rgba(35,120,90,.18);color:#23785A':'background:rgba(120,120,120,.2);color:var(--text2)')+'">자동 전환 '+(r.autoFlipEnabled?'ON':'OFF')+'</span></div>'+
+'<div style="font-size:12px;line-height:1.7;color:var(--text2)">'+
+'재실 '+r.occupied+'실 · 11:10 전환 예정 <b style="color:var(--text)">'+r.due.length+'실</b> · 연박 유지 '+r.staying.length+'실 · 기록없음 '+r.unknown.length+'실<br>'+
+'알림: 1차 '+(hm(r.alert1SentAt)||'미발송')+' / 2차 '+(hm(r.alert2SentAt)||'미발송')+'<br>'+
+'전환 예정: '+names(r.due)+'<br>'+
+(r.unknown.length?'<span style="color:#C4432F">기록없음(직접 확인 필요): '+names(r.unknown)+'</span>':'')+
+'</div>';
+}
+
 async function loadRooms(silent=false){
 try{
 const r=await api({action:'getRooms'});
-if(r.ok){detectRoomChanges(r.rooms);S.rooms=r.rooms;render();stats();maidStats();if(S.role==='admin')renderTodayInspectorBar();}
+if(r.ok){detectRoomChanges(r.rooms);S.rooms=r.rooms;await loadStays();render();stats();maidStats();if(S.role==='admin'){renderTodayInspectorBar();renderCheckoutBoard();}}
 else if(!silent)toast('로드실패');
 }catch(e){if(!silent)toast('오류');}
 }
@@ -768,11 +814,20 @@ function buildCard(room, isDone){
     maidHtml='<div class="room-maid-badge" style="background:rgba(245,158,11,.18);color:#f59e0b;border-color:rgba(245,158,11,.5);font-weight:700;">⚠️ 미배정</div>';
   }
 
+  const _stay=(S.stays||{})[no];
+  let stayHtml='';
+  if(room.status==='uncleaned'&&_stay){
+    if(_stay.statusSource==='timeout')stayHtml='<div class="room-stay-badge stay-unconfirmed">⚠ 퇴실 미확인</div>';
+    else if(_stay.statusSource==='url')stayHtml='<div class="room-stay-badge stay-confirmed">✓ 퇴실 확인</div>';
+  }else if(room.status==='occupied'&&_stay&&_stay.checkoutDate){
+    stayHtml='<div class="room-stay-badge stay-date'+(_stay.checkoutDate>(S.stayToday||'')?' stay-extended':'')+'">퇴실 '+esc(_stay.checkoutDate.slice(5).replace('-','/'))+'</div>';
+  }
+
   const innerHtml=
     '<div class="room-no" style="color:'+theme.numColor+'">'+no+'</div>'+
     '<div class="room-type-row"><span class="room-type" style="color:'+theme.dimColor+'">'+room.typeCode+'</span>'+badge+'</div>'+
     '<div class="room-status status-'+room.status+'">'+(STATUS_ICON[room.status]||'')+KR[room.status]+'</div>'+
-    (room.inspectorName&&room.status==='inspection'?'<div class="room-inspector-badge">🔍 '+esc(room.inspectorName)+'</div>':'')+maidHtml+timeHtml;
+    (room.inspectorName&&room.status==='inspection'?'<div class="room-inspector-badge">🔍 '+esc(room.inspectorName)+'</div>':'')+maidHtml+stayHtml+timeHtml;
 
   if(S.batchMode&&S.role==='admin'){
     card.innerHTML='<div class="card-check" style="color:'+(isSel?'var(--accent)':'var(--text2)')+'">'
@@ -819,6 +874,16 @@ if(inspSec&&inspPicker&&S.role==='admin'){
     inspPicker.innerHTML='<option value="">선택하세요 / Select</option>'+allNames.map(n=>'<option value="'+n+'"'+(S.room.inspectorName===n?' selected':'')+'>'+n+'</option>').join('');
   }else{inspSec.style.display='none';}
 }else if(inspSec){inspSec.style.display='none';}
+const staySec=$('stayDateSection');
+if(staySec){
+  if(S.role==='admin'&&S.room.status==='occupied'){
+    const _st=(S.stays||{})[no];
+    $('stayDateInput').value=(_st&&_st.checkoutDate)||'';
+    $('stayDateInput').min=S.stayToday||'';
+    $('stayDateHint').textContent=(_st&&_st.checkoutDate)?'기본값은 입실 다음 날입니다. 연박이면 퇴실 날짜로 바꿔 주세요.':'퇴실예정일 기록이 없습니다. 날짜를 지정하면 자동 전환 대상에 포함됩니다.';
+    staySec.style.display='block';
+  }else{staySec.style.display='none';}
+}
 $('notesList').innerHTML='<div style="color:var(--text2);font-size:12px">로딩중...</div>';
 $('roomModal').classList.add('open');
 try{
