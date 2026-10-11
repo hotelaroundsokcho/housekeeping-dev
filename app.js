@@ -110,6 +110,7 @@ entries.forEach(function(u){
     '<div class="user-name">'+esc(u.name)+'</div>'+
     '<div class="user-role-badge">'+(u.role==='admin'?'관리자':'메이드')+'</div>';
   card.onclick=function(){pickLoginUser(u.name,u.role,u.apiName||u.name);};
+  card.tabIndex=0;card.setAttribute('role','button');card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click();}};
   wrap.appendChild(card);
 });
 }
@@ -182,7 +183,7 @@ document.querySelectorAll('.user-card').forEach(b=>b.classList.remove('active'))
 }
 async function go(){
 if(S.role==='maid'&&!S.lang){$('langPickModal').classList.add('open');return;}
-$('loginScreen').style.display='none';$('app').style.display='flex';
+$('loginScreen').style.display='none';$('app').style.display='flex';$('app').dataset.role=S.role;
 $('headerSub').textContent=S.role==='admin'?'관리자('+S.name+')':S.name+' 님';
 ['settingsBtn','maidSec','maidStatsSection','batchModeBtn'].forEach(id=>{
 const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
@@ -236,16 +237,22 @@ if(!r||!r.ok){box.style.display='none';return;}
 const hm=function(t){return t?String(t).slice(11,16):'';};
 const names=function(list){return list.length?list.map(function(x){return esc(x.roomNo)+'호';}).join(', '):'없음';};
 box.style.display='block';
+const wasOpen=!!(box.querySelector('details')&&box.querySelector('details').open);
 box.innerHTML=
-'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
-'<b style="font-size:13px">오늘 퇴실 현황 · '+esc(r.today)+'</b>'+
-'<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;'+(r.autoFlipEnabled?'background:rgba(35,120,90,.18);color:#23785A':'background:rgba(120,120,120,.2);color:var(--text2)')+'">자동 전환 '+(r.autoFlipEnabled?'ON':'OFF')+'</span></div>'+
-'<div style="font-size:12px;line-height:1.7;color:var(--text2)">'+
-'재실 '+r.occupied+'실 · 11:10 전환 예정 <b style="color:var(--text)">'+r.due.length+'실</b> · 연박 유지 '+r.staying.length+'실 · 기록없음 '+r.unknown.length+'실<br>'+
-'알림: 1차 '+(hm(r.alert1SentAt)||'미발송')+' / 2차 '+(hm(r.alert2SentAt)||'미발송')+'<br>'+
-'전환 예정: '+names(r.due)+'<br>'+
-(r.unknown.length?'<span style="color:#C4432F">기록없음(직접 확인 필요): '+names(r.unknown)+'</span>':'')+
-'</div>';
+'<details class="cb-details"'+(wasOpen?' open':'')+'><summary>'+
+'<b class="cb-title">오늘 퇴실 현황</b>'+
+'<span class="cb-sum">전환 예정 <b>'+r.due.length+'</b>'+(r.unknown.length?' · 기록없음 <b class="warn">'+r.unknown.length+'</b>':'')+'</span>'+
+'<span class="cb-flag '+(r.autoFlipEnabled?'on':'off')+'">자동 전환 '+(r.autoFlipEnabled?'ON':'OFF')+'</span></summary>'+
+'<div class="cb-line">기준일 '+esc(r.today)+'</div>'+
+'<div class="cb-cells">'+
+'<div class="cb-cell"><b>'+r.occupied+'</b><span>재실</span></div>'+
+'<div class="cb-cell hot"><b>'+r.due.length+'</b><span>11:10 전환 예정</span></div>'+
+'<div class="cb-cell"><b>'+r.staying.length+'</b><span>연박 유지</span></div>'+
+'<div class="cb-cell'+(r.unknown.length?' warn':'')+'"><b>'+r.unknown.length+'</b><span>기록없음</span></div></div>'+
+'<div class="cb-line">알림: 1차 '+(hm(r.alert1SentAt)||'미발송')+' / 2차 '+(hm(r.alert2SentAt)||'미발송')+'<br>'+
+'전환 예정: <b>'+names(r.due)+'</b></div>'+
+(r.unknown.length?'<div class="cb-warn">기록없음(직접 확인 필요): '+names(r.unknown)+'</div>':'')+
+'</details>';
 }
 
 async function loadRooms(silent=false){
@@ -489,18 +496,14 @@ S.batchMode=!S.batchMode;
 S.batchSelected=new Set();
 const btn=$('batchModeBtn');
 if(S.batchMode){
-btn.textContent='✖ 일괄 작업 취소';
-btn.style.background='rgba(124,92,46,.15)';
-btn.style.borderColor='rgba(124,92,46,.4)';
-btn.style.color='var(--accent)';
+btn.textContent='일괄 작업 취소';
+btn.classList.add('on');
 $('batchBar').style.display='flex';
 const sab=$('selectAllBtn');if(sab)sab.style.display='inline-block';
 setBatchAction('status');
 }else{
-btn.textContent='☑ 일괄 작업 (상태변경·배정)';
-btn.style.background='rgba(59,130,246,.1)';
-btn.style.borderColor='rgba(59,130,246,.3)';
-btn.style.color='var(--occupied)';
+btn.textContent='일괄 작업';
+btn.classList.remove('on');
 $('batchBar').style.display='none';
 const sab2=$('selectAllBtn');if(sab2)sab2.style.display='none';
 }
@@ -568,20 +571,20 @@ if(!btnWrap)return;
 btnWrap.innerHTML='';
 S._assignPickSelected=new Set();
 if(!maids.length){
-btnWrap.innerHTML='<span style="color:var(--text2);font-size:12px">등록된 메이드 없음</span>';
+btnWrap.innerHTML='<span style="color:#BFD3D8;font-size:13px">등록된 메이드 없음</span>';
 return;
 }
 function renderAssignPicker(){
 btnWrap.innerHTML='';
-const COLORS=['#06b6d4','#a78bfa','#fb923c','#f472b6','#facc15'];
+const COLORS=['#0E7490','#BE185D','#4D7C0F','#9A3412','#1D4ED8'];
 maids.forEach(function(name,idx){
 const color=COLORS[idx%5];
 const isSel=S._assignPickSelected.has(name);
 const btn=document.createElement('button');
 btn.className='assign-maid-btn';
 btn.style.cssText=isSel
-?'background:'+color+'33;border:2px solid '+color+';color:'+color+';padding:8px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;'
-:'background:'+color+'11;border:1.5px solid '+color+'55;color:'+color+';padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;opacity:0.75;';
+?'background:'+color+';border:2px solid #fff;color:#fff;padding:0 16px;min-height:42px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;'
+:'background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.35);color:#fff;padding:0 16px;min-height:42px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;';
 btn.textContent=(isSel?'✓ ':'')+name;
 btn.onclick=function(){
 if(S._assignPickSelected.has(name))S._assignPickSelected.delete(name);
@@ -591,12 +594,12 @@ renderAssignPicker();
 btnWrap.appendChild(btn);
 });
 const sep=document.createElement('div');
-sep.style.cssText='width:1px;height:32px;background:var(--border);margin:0 4px;flex-shrink:0;';
+sep.style.cssText='width:1px;height:32px;background:rgba(255,255,255,.25);margin:0 4px;flex-shrink:0;';
 btnWrap.appendChild(sep);
 const selCount=S._assignPickSelected.size;
 const ok=document.createElement('button');
 ok.className='assign-maid-btn';
-ok.style.cssText='background:rgba(74,222,128,.15);border:1.5px solid rgba(74,222,128,.4);color:var(--vacant);padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;'+(selCount===0?'opacity:0.4;':'');
+ok.style.cssText='background:#6FD3A6;border:none;color:#10242E;padding:0 18px;min-height:42px;border-radius:999px;font-size:14px;font-weight:800;cursor:pointer;'+(selCount===0?'opacity:0.4;':'');
 ok.textContent=selCount>0?'✅ '+Array.from(S._assignPickSelected).join('+')+' 배정':'✅ 배정';
 ok.onclick=function(){
 if(S._assignPickSelected.size===0){toast('메이드를 선택하세요');return;}
@@ -605,7 +608,7 @@ execBulkAssign(Array.from(S._assignPickSelected).join(','));
 btnWrap.appendChild(ok);
 const clr=document.createElement('button');
 clr.className='assign-maid-btn';
-clr.style.cssText='background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);color:var(--uncleaned);padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
+clr.style.cssText='background:transparent;border:1.5px solid #FF9C88;color:#FFB4A4;padding:0 16px;min-height:42px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;';
 clr.textContent='✕ 해제';
 clr.onclick=function(){execBulkAssign('');};
 btnWrap.appendChild(clr);
@@ -668,17 +671,19 @@ return d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute
 return d.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric'})+' '+d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 }
 }
-const MAID_COLORS = ['#06b6d4','#a78bfa','#fb923c','#f472b6','#facc15'];
+const MAID_COLORS = ['#0E7490','#BE185D','#4D7C0F','#9A3412','#1D4ED8'];
 
 const STATUS_CARD_THEME = {
-occupied:   {bg:'#f9a8d4', border:'#ec4899', numColor:'#ffffff', dimColor:'#000000'},
-uncleaned:  {bg:'#f87171', border:'#dc2626', numColor:'#ffffff', dimColor:'#000000'},
-cleaning:   {bg:'#3d2b12', border:'#5a4420', numColor:'#fbbf6a', dimColor:'#000000'},
-inspection: {bg:'#a78bfa', border:'#7c3aed', numColor:'#ffffff', dimColor:'#000000'},
-vacant:     {bg:'#4ade80', border:'#16a34a', numColor:'#022c16', dimColor:'#000000'},
-broken:     {bg:'#fb923c', border:'#ea580c', numColor:'#ffffff', dimColor:'#000000'},
-cleaned:    {bg:'#a78bfa', border:'#7c3aed', numColor:'#ffffff', dimColor:'#000000'},
+occupied:   {bg:'#E6EAF2', border:'#C5CDDF', numColor:'#3F4D6B', dimColor:'#51646C'},
+uncleaned:  {bg:'#FBE6E1', border:'#E7B5AC', numColor:'#9E2F1E', dimColor:'#51646C'},
+cleaning:   {bg:'#FAEFD6', border:'#EBCB8E', numColor:'#7A4A00', dimColor:'#51646C'},
+inspection: {bg:'#EDE8F8', border:'#CFC3EC', numColor:'#51359B', dimColor:'#51646C'},
+vacant:     {bg:'#DFF1E8', border:'#A9D9C2', numColor:'#17583F', dimColor:'#51646C'},
+broken:     {bg:'#E3E8EA', border:'#B7C0C5', numColor:'#343E44', dimColor:'#51646C'},
+cleaned:    {bg:'#EDE8F8', border:'#CFC3EC', numColor:'#51359B', dimColor:'#51646C'},
 };
+const SHORT_KR={occupied:'재실',uncleaned:'미정비',cleaning:'정비중',inspection:'인스펙션',vacant:'공실',broken:'고장',cleaned:'인스펙션'};
+function floorOf(no){var n=parseInt(String(no),10);return isNaN(n)?0:Math.floor(n/100);}
 
 const STATUS_ICON = {
   occupied:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>',
@@ -705,7 +710,7 @@ function render(){
     grid.innerHTML='';
 
     if(rooms.length===0){
-      grid.innerHTML='<div style="color:var(--text2);text-align:center;padding:40px 20px;font-size:14px">배정된 객실이 없습니다.<br><small>Waiting for room assignment</small></div>';
+      grid.innerHTML='<div class="empty-state">배정된 객실이 없습니다.<small>Waiting for room assignment</small></div>';
       return;
     }
 
@@ -729,29 +734,28 @@ function render(){
       }
     }
 
-    // 진행률 헤더
+    // 진행률 헤더 (칸 게이지)
     const pct=total?Math.round(doneCount/total*100):0;
+    let gauge='';
+    for(let i=0;i<total;i++)gauge+='<i class="'+(i<doneCount?'f':'')+'"></i>';
     const bar=document.createElement('div');
-    bar.style.cssText='margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;grid-column:1/-1;';
+    bar.className='hk-progress';
     bar.innerHTML=
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
-        '<span style="font-size:13px;font-weight:600;color:var(--text);">'+esc(S.name)+' 님 오늘 현황</span>'+
-        '<span style="font-size:13px;font-weight:700;color:var(--vacant);">'+doneCount+' / '+total+'</span>'+
+      '<div class="hk-progress-top">'+
+        '<span class="hk-progress-name">'+esc(S.name)+' 님 오늘 현황</span>'+
+        '<span class="hk-progress-count">'+doneCount+'<small> / '+total+'</small></span>'+
       '</div>'+
-      '<div style="background:var(--surface2);border-radius:6px;height:8px;overflow:hidden;">'+
-        '<div style="background:var(--vacant);height:100%;width:'+pct+'%;border-radius:6px;transition:width .4s ease;"></div>'+
-      '</div>'+
-      '<div style="margin-top:5px;font-size:11px;color:var(--text2);text-align:right;">'+
-        (pending.length>0?'남은 객실 '+pending.length+'개 / '+pending.length+' left':'✅ 모든 객실 공실완료! / All Vacant!')+
-        ' · 완료율 '+pct+'% / '+pct+'% done'+
-        (etaStr?' · <span style="color:var(--accent);font-weight:600;">'+etaStr+'</span>':'')+
+      '<div class="hk-gauge" role="img" aria-label="'+doneCount+' / '+total+'">'+gauge+'</div>'+
+      '<div class="hk-progress-note">'+
+        '<span>'+(pending.length>0?'남은 객실 <b>'+pending.length+'</b>개 / '+pending.length+' left':'✅ 모든 객실 공실완료! / All Vacant!')+'</span>'+
+        '<span>완료율 '+pct+'% / '+pct+'% done'+(etaStr?' · <b>'+etaStr+'</b>':'')+'</span>'+
       '</div>';
     grid.appendChild(bar);
 
     // 미완료 섹션
     if(pending.length>0){
       const ph=document.createElement('div');
-      ph.style.cssText='font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:4px 2px 8px;grid-column:1/-1;';
+      ph.className='hk-section';
       ph.textContent='미완료 / Pending · '+pending.length;
       grid.appendChild(ph);
       const pg=document.createElement('div');
@@ -763,8 +767,8 @@ function render(){
     // 완료 섹션
     if(done.length>0){
       const dh=document.createElement('div');
-      dh.style.cssText='font-size:11px;font-weight:700;color:var(--vacant);text-transform:uppercase;letter-spacing:.06em;padding:14px 2px 8px;display:flex;align-items:center;gap:6px;grid-column:1/-1;';
-      dh.innerHTML='✅ 공실완료 / Vacant · '+done.length;
+      dh.className='hk-section done';
+      dh.textContent='공실완료 / Vacant · '+done.length;
       grid.appendChild(dh);
       const dg=document.createElement('div');
       dg.className='rooms-grid-inner';
@@ -774,10 +778,33 @@ function render(){
     return;
   }
 
-  // ── 관리자 화면 (기존 로직 유지) ──
+  // ── 관리자 화면: 층별 단면도 (20F → 3F) ──
   const grid=$('roomsGrid');
   grid.innerHTML='';
-  rooms.forEach(function(room){ grid.appendChild(buildCard(room,false)); });
+  if(rooms.length===0){
+    grid.innerHTML='<div class="empty-state">조건에 맞는 객실이 없습니다.<small>다른 상태를 선택해 보세요.</small></div>';
+    return;
+  }
+  const byFloor={};
+  rooms.forEach(function(r){
+    const f=floorOf(r.roomNo);
+    if(!byFloor[f])byFloor[f]=[];
+    byFloor[f].push(r);
+  });
+  Object.keys(byFloor).map(Number).sort(function(a,b){return b-a;}).forEach(function(f){
+    const list=byFloor[f].sort(function(a,b){return String(a.roomNo).localeCompare(String(b.roomNo),'ko',{numeric:true});});
+    const row=document.createElement('div');
+    row.className='floor-row';
+    const lab=document.createElement('div');
+    lab.className='floor-label';
+    lab.innerHTML=f?('<span>'+f+'</span><small>층</small>'):'<small>기타</small>';
+    const tiles=document.createElement('div');
+    tiles.className='floor-tiles';
+    list.forEach(function(room){ tiles.appendChild(buildCard(room,false)); });
+    row.appendChild(lab);
+    row.appendChild(tiles);
+    grid.appendChild(row);
+  });
 }
 
 function buildCard(room, isDone){
@@ -785,22 +812,17 @@ function buildCard(room, isDone){
   const isSel=S.batchSelected.has(no);
   const isAssignSel=isSel&&S.batchAction==='assign';
   const card=document.createElement('div');
-  const firstMaid=room.maidName?room.maidName.split(',')[0].trim():'';
-  const assignedIdx=getMaidColorIdx(firstMaid);
-  const maidColor=assignedIdx>=0?MAID_COLORS[assignedIdx]:null;
-  const theme=STATUS_CARD_THEME[room.status]||STATUS_CARD_THEME.inspection;
+  const st=room.status==='cleaned'?'inspection':room.status;
 
   const _isUnassignCleaning=(room.status==='cleaning'&&!room.maidName);
-  card.className='room-card'+(isSel?' card-selected':'')+(_isUnassignCleaning?' cleaning-unassigned':'');
-  card.style.background=theme.bg;
-  card.style.border=_isUnassignCleaning?'2px dashed #f59e0b':'1px solid '+(isSel?'#ef4444':theme.border);
-  if(isDone) card.style.opacity='0.5';
-  if(maidColor&&!isAssignSel){card.style.borderLeft='5px solid '+maidColor;}
-  if(isAssignSel){card.style.borderLeft='5px solid #4ade80';card.style.boxShadow='0 0 0 2px rgba(74,222,128,.35)';}
+  card.className='room-card '+(st||'')+(isSel?' card-selected':'')+(isAssignSel?' assign-sel':'')+(_isUnassignCleaning?' cleaning-unassigned':'')+(isDone?' is-done':'');
+  card.setAttribute('role','button');
+  card.tabIndex=0;
+  card.setAttribute('aria-label',no+'호 '+(SHORT_KR[st]||st||''));
 
   const badge=bedBadge(room.typeCode);
   const timeStr=fmtCardTime(room.updatedAt);
-  const timeHtml=timeStr?'<div class="room-time" style="color:'+theme.dimColor+'">'+timeStr+'</div>':'';
+  const timeHtml=timeStr?'<div class="room-time">'+timeStr+'</div>':'';
 
   let maidHtml='';
   if(room.maidName){
@@ -808,10 +830,10 @@ function buildCard(room, isDone){
     maidHtml=maidNames.map(function(name){
       const mc=getMaidColorIdx(name);
       const color=mc>=0?MAID_COLORS[mc]:null;
-      return '<div class="room-maid-badge"'+(color?' style="background:'+color+'22;color:#000000;border-color:'+color+'44"':'')+'>'        +'<span class="maid-dot"'+(color?' style="background:'+color+'"':'')+'>'+'</span>'+esc(name)+'</div>';
+      return '<div class="room-maid-badge"><span class="maid-dot"'+(color?' style="background:'+color+'"':'')+'></span>'+esc(name)+'</div>';
     }).join('');
   }else if(room.status==='cleaning'){
-    maidHtml='<div class="room-maid-badge" style="background:rgba(245,158,11,.18);color:#f59e0b;border-color:rgba(245,158,11,.5);font-weight:700;">⚠️ 미배정</div>';
+    maidHtml='<div class="room-maid-badge warn">⚠ 미배정</div>';
   }
 
   const _stay=(S.stays||{})[no];
@@ -823,22 +845,26 @@ function buildCard(room, isDone){
     stayHtml='<div class="room-stay-badge stay-date'+(_stay.checkoutDate>(S.stayToday||'')?' stay-extended':'')+'">퇴실 '+esc(_stay.checkoutDate.slice(5).replace('-','/'))+'</div>';
   }
 
+  const statusLabel=S.role==='maid'?(KR[st]||st||''):(SHORT_KR[st]||KR[st]||st||'');
   const innerHtml=
-    '<div class="room-no" style="color:'+theme.numColor+'">'+no+'</div>'+
-    '<div class="room-type-row"><span class="room-type" style="color:'+theme.dimColor+'">'+room.typeCode+'</span>'+badge+'</div>'+
-    '<div class="room-status status-'+room.status+'">'+(STATUS_ICON[room.status]||'')+KR[room.status]+'</div>'+
+    '<div class="room-no">'+esc(no)+'</div>'+
+    '<div class="room-type-row"><span class="room-type">'+esc(room.typeCode||'')+'</span>'+badge+'</div>'+
+    '<div class="room-status status-'+st+'">'+(STATUS_ICON[st]||'')+statusLabel+'</div>'+
     (room.inspectorName&&room.status==='inspection'?'<div class="room-inspector-badge">🔍 '+esc(room.inspectorName)+'</div>':'')+maidHtml+stayHtml+timeHtml;
 
+  let act;
   if(S.batchMode&&S.role==='admin'){
-    card.innerHTML='<div class="card-check" style="color:'+(isSel?'var(--accent)':'var(--text2)')+'">'
-      +(isSel?'☑':'☐')+'</div>'+innerHtml;
-    card.onclick=function(){toggleBatchSelect(no);};
+    card.innerHTML='<div class="card-check" aria-hidden="true">'+(isSel?'☑':'☐')+'</div>'+innerHtml;
+    act=function(){toggleBatchSelect(no);};
   }else{
     card.innerHTML=innerHtml;
-    card.onclick=function(){openRoom(no);};
+    act=function(){openRoom(no);};
   }
+  card.onclick=act;
+  card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();act();}};
   return card;
 }
+
 async function openRoom(no){
 if(S.batchMode)return;
 no=String(no);
@@ -1008,31 +1034,28 @@ function renderTodayInspectorBar(){
   const inspectors=S.maids&&S.maids.length?S.maids:['Mat','Diana'];
   const label=document.createElement('span');
   label.textContent='오늘의 인스펙터:';
-  label.style.cssText='font-size:13px;color:var(--text2);margin-right:8px;align-self:center;flex-shrink:0;';
+  label.className='bar-label';
   bar.appendChild(label);
-  const activeStyle='background:#7c5c2e;color:#faf7f2;border:none;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:500;cursor:pointer;margin-right:6px;';
-  const inactiveStyle='background:transparent;color:#7a6a52;border:1.5px solid #d6cfbe;border-radius:20px;padding:5px 16px;font-size:13px;cursor:pointer;margin-right:6px;';
   inspectors.forEach(function(n){
     const btn=document.createElement('button');
     btn.textContent=n;
     btn.dataset.name=n;
-    btn.style.cssText=S.todayInspector===n?activeStyle:inactiveStyle;
+    btn.className='chip'+(S.todayInspector===n?' on':'');
     btn.addEventListener('click',function(){setTodayInspectorUI(this.dataset.name);});
     bar.appendChild(btn);
   });
   const clearBtn=document.createElement('button');
   clearBtn.textContent='해제';
-  clearBtn.style.cssText=inactiveStyle+'color:#991b1b;border-color:#fca5a5;';
+  clearBtn.className='chip danger';
   clearBtn.addEventListener('click',function(){setTodayInspectorUI('');});
   bar.appendChild(clearBtn);
   const sep=document.createElement('span');
-  sep.style.cssText='margin:0 8px;color:var(--border);align-self:center;';
-  sep.textContent='|';
+  sep.className='bar-sep';
   bar.appendChild(sep);
   const crossBtn=document.createElement('button');
   const crossOn=S.crossInspection;
   crossBtn.textContent=crossOn?'크로스 ON':'크로스 OFF';
-  crossBtn.style.cssText=crossOn?activeStyle:inactiveStyle;
+  crossBtn.className='chip'+(crossOn?' on':'');
   crossBtn.title='크로스 인스펙션: 정비 메이드와 다른 메이드가 점검';
   crossBtn.addEventListener('click',function(){toggleCrossInspection();});
   bar.appendChild(crossBtn);
@@ -1348,12 +1371,12 @@ let _popupQueue = [];
 let _popupRunning = false;
 
 const STATUS_POPUP_ICON = {
-  occupied:'💗', uncleaned:'🔴', cleaning:'🟡',
-  inspection:'⬜', vacant:'🟢', broken:'🔶', cleaned:'⬜'
+  occupied:'●', uncleaned:'●', cleaning:'●',
+  inspection:'●', vacant:'●', broken:'●', cleaned:'●'
 };
 const STATUS_POPUP_COLOR = {
-  occupied:'#f472b6', uncleaned:'#ef4444', cleaning:'#f59e0b',
-  inspection:'#94a3b8', vacant:'#4ade80', broken:'#ff6b35', cleaned:'#94a3b8'
+  occupied:'#9FB0D3', uncleaned:'#FF8A73', cleaning:'#F2B84B',
+  inspection:'#B6A3F0', vacant:'#6FD3A6', broken:'#AEB9BF', cleaned:'#B6A3F0'
 };
 
 function fmtPopupTime(iso){
@@ -1399,8 +1422,8 @@ function showRoomChangePopup(item, onDone){
   const icon=STATUS_POPUP_ICON[item.newSt]||'🔔';
   const label=KR[item.newSt]||item.newSt;
   const timeStr=fmtPopupTime(item.updatedAt);
-  const maidStr=item.maidName?'<span style="font-size:12px;font-weight:600;color:#a78bfa;">'+esc(item.maidName)+'</span>':'';
-  const timeEl=timeStr?'<span style="font-size:11px;color:#8b91a8;">'+timeStr+'</span>':'';
+  const maidStr=item.maidName?'<span style="font-size:12px;font-weight:600;color:#CFC4F5;">'+esc(item.maidName)+'</span>':'';
+  const timeEl=timeStr?'<span style="font-size:11px;color:#A9C2C8;">'+timeStr+'</span>':'';
 
   document.querySelectorAll('.room-change-popup').forEach(function(el){
     const cur=parseInt(el.style.bottom)||80;
@@ -1411,7 +1434,7 @@ function showRoomChangePopup(item, onDone){
   pop.className='room-change-popup';
   pop.style.cssText=
     'position:fixed;bottom:80px;right:16px;z-index:9999;'+
-    'background:#1a1d27;border:1px solid '+color+';border-left:4px solid '+color+';'+
+    'background:#10242E;border:1px solid '+color+';border-left:4px solid '+color+';'+
     'border-radius:12px;padding:12px 16px;min-width:210px;max-width:280px;'+
     'box-shadow:0 4px 24px rgba(0,0,0,.55);transition:bottom .25s ease;'+
     'animation:rcpSlideIn .28s cubic-bezier(.16,1,.3,1);'+
@@ -1420,12 +1443,12 @@ function showRoomChangePopup(item, onDone){
   pop.innerHTML=
     '<div style="display:flex;align-items:center;gap:8px;">'+
       '<span style="font-size:18px;line-height:1;">'+icon+'</span>'+
-      '<span style="font-size:16px;font-weight:700;color:#e8eaf0;">'+item.roomNo+'호</span>'+
+      '<span style="font-size:16px;font-weight:700;color:#fff;">'+item.roomNo+'호</span>'+
       '<span style="font-size:12px;font-weight:600;color:'+color+';">'+label+'</span>'+
     '</div>'+
     '<div style="display:flex;align-items:center;gap:6px;padding-left:26px;">'+
       maidStr+
-      (maidStr&&timeEl?'<span style="color:#3e4255;font-size:11px;">·</span>':'')+
+      (maidStr&&timeEl?'<span style="color:#6C8790;font-size:11px;">·</span>':'')+
       timeEl+
     '</div>';
 
@@ -1686,7 +1709,7 @@ const row=document.createElement('div');
 row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);';
 row.innerHTML='<span style="font-size:14px">'+(isAdmin?'👔':'👤')+' '+esc(name)+'</span>';
 const tog=document.createElement('button');
-tog.style.cssText='padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;background:'+(isIns?'var(--vacant)':'var(--surface2)')+';color:'+(isIns?'#000':'var(--text2)');
+tog.style.cssText='padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;background:'+(isIns?'var(--vacant)':'var(--surface2)')+';color:'+(isIns?'#fff':'var(--text2)');
 tog.textContent=isIns?'ON ✓':'OFF';
 tog.onclick=async function(){
 showLoad('저장 중...');
