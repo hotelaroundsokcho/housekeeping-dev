@@ -79,8 +79,8 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');set
 
 async function api(p){
 try{
-const r=await fetch(API,{method:'POST',redirect:'follow',body:JSON.stringify(p)});
-return JSON.parse(await r.text());
+const r=await fetch(API,{method:'POST',redirect:'follow',body:JSON.stringify(AUTH.decorate(p))});
+const j=JSON.parse(await r.text());if(j&&j.code==='AUTH_REQUIRED')AUTH.denied();return j;
 }catch(e){return{ok:false,error:String(e)};}
 }
 
@@ -169,7 +169,7 @@ $('cpCurrentGroup').style.display='none';
 $('changePinModal').classList.add('open');
 }
 
-function logout(){
+function logout(){AUTH.onLogout();
 clearInterval(timer);
 sessionStorage.removeItem('hk_role');
 sessionStorage.removeItem('hk_name');
@@ -1465,22 +1465,8 @@ function showRoomChangePopup(item, onDone){
   document.body.appendChild(pop);
   tid=setTimeout(remove, 4500);
 }
-(function restoreSession(){
-const role=sessionStorage.getItem('hk_role');
-const name=sessionStorage.getItem('hk_name');
-if(role&&name){S.role=role;S.name=name;S.isInspector=sessionStorage.getItem('hk_inspector')==='1';S.maidPasswordSet=sessionStorage.getItem('hk_maid_pwset')==='1';go();}
-})();
-(async function loadLoginUsers(){
-try{
-const ar=await api({action:'getAdmins'});
-const mr=await api({action:'getMaids'});
-const admins=(ar.ok&&ar.admins&&ar.admins.length)?ar.admins:null;
-const maids=(mr.ok&&mr.maids)?mr.maids:[];
-renderUserCards(admins,maids);
-}catch(e){
-renderUserCards(null,[]);
-}
-})();
+AUTH.restore();
+AUTH.initLogin();
 
 // ── 업무일지 다운로드 ──
 function openReportModal(){
