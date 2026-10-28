@@ -28,6 +28,7 @@ cleaning:'정비중 / Cleaning',
 inspection:'인스펙션필요 / Inspection',
 vacant:'공실완료 / Vacant',
 broken:'고장 / Broken',
+  office:'사무실 / Office',
 cleaned:'인스펙션필요 / Inspection'
 };
 
@@ -61,7 +62,7 @@ function pickMaidLang(code){
 
 const KR_CHAT = {
 occupied:'재실', uncleaned:'미정비', cleaning:'정비중',
-inspection:'인스펙션필요', vacant:'공실완료', broken:'고장'
+inspection:'인스펙션필요', vacant:'공실완료', broken:'고장', office:'사무실'
 };
 
 function bedBadge(typeCode) {
@@ -266,7 +267,7 @@ else if(!silent)toast('로드실패');
 function stats(){
 let rooms=S.rooms;
 if(S.role==='maid'){
-rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken');
+rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken'&&x.status!=='office');
 const isMine=x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase());
 const isMyInspection=x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName);
 rooms=S.isInspector?rooms.filter(x=>isMine(x)||isMyInspection(x)):rooms.filter(isMine);
@@ -277,7 +278,7 @@ const st=r.status==='cleaned'?'inspection':r.status;
 if(c[st]!==undefined)c[st]++;
 });
 ['occupied','uncleaned','cleaning','inspection','vacant','broken'].forEach((k,i)=>$('cnt'+i).textContent=c[k]);
-const total=rooms.length;
+const total=rooms.filter(x=>x.status!=='office').length;
 const cntAllEl=$('cntAll');
 if(cntAllEl)cntAllEl.textContent=total;
 updateStatCardHighlight();
@@ -547,7 +548,7 @@ function selectAllVisible(){
 }
 
 async function bulkSetStatus(status){
-const KR_LABEL={occupied:'재실',uncleaned:'미정비',cleaning:'정비중',inspection:'인스펙션필요',vacant:'공실완료',broken:'고장'};
+const KR_LABEL={occupied:'재실',uncleaned:'미정비',cleaning:'정비중',inspection:'인스펙션필요',vacant:'공실완료',broken:'고장',office:'사무실'};
 const cnt=S.batchSelected.size;if(!cnt)return;
 const label=KR_LABEL[status]||status;
 if(!confirm(cnt+'개 객실을 ['+label+']로 변경합니다.\n계속하시겠습니까?'))return;
@@ -680,9 +681,10 @@ cleaning:   {bg:'#FAEFD6', border:'#EBCB8E', numColor:'#7A4A00', dimColor:'#5164
 inspection: {bg:'#EDE8F8', border:'#CFC3EC', numColor:'#51359B', dimColor:'#51646C'},
 vacant:     {bg:'#DFF1E8', border:'#A9D9C2', numColor:'#17583F', dimColor:'#51646C'},
 broken:     {bg:'#E3E8EA', border:'#B7C0C5', numColor:'#343E44', dimColor:'#51646C'},
+  office:     {bg:'#F1F3F5', border:'#A9B3BC', numColor:'#4B5663', dimColor:'#51646C'},
 cleaned:    {bg:'#EDE8F8', border:'#CFC3EC', numColor:'#51359B', dimColor:'#51646C'},
 };
-const SHORT_KR={occupied:'재실',uncleaned:'미정비',cleaning:'정비중',inspection:'인스펙션',vacant:'공실',broken:'고장',cleaned:'인스펙션'};
+const SHORT_KR={occupied:'재실',uncleaned:'미정비',cleaning:'정비중',inspection:'인스펙션',vacant:'공실',broken:'고장',cleaned:'인스펙션',office:'사무실'};
 function floorOf(no){var n=parseInt(String(no),10);return isNaN(n)?0:Math.floor(n/100);}
 
 const STATUS_ICON = {
@@ -692,7 +694,8 @@ const STATUS_ICON = {
   inspection:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="10" cy="10" r="6"/><path d="M21 21l-5-5"/></svg>',
   vacant:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4 12H1M23 12h-3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>',
   broken:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M9 6l-2 6 3 2-2 4"/></svg>',
-  cleaned:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="10" cy="10" r="6"/><path d="M21 21l-5-5"/></svg>'
+  cleaned:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="10" cy="10" r="6"/><path d="M21 21l-5-5"/></svg>',
+  office:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>'
 };
 
 function render(){
@@ -702,7 +705,7 @@ function render(){
 
   // ── 메이드 화면 전용 처리 ──
   if(S.role==='maid'){
-    rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken');
+    rooms=rooms.filter(x=>x.status!=='occupied'&&x.status!=='broken'&&x.status!=='office');
     const isMine=x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase());
     const isMyInspection=x=>x.status==='inspection'&&(x.inspectorName===S.name||!x.inspectorName);
     rooms=S.isInspector?rooms.filter(x=>isMine(x)||isMyInspection(x)):rooms.filter(isMine);
@@ -973,7 +976,7 @@ b.classList.toggle('active',b.getAttribute('data-tab')===tab);
 }
 
 function updBtns(){
-const map={occupied:0,uncleaned:1,broken:2,cleaning:3,inspection:4,vacant:5};
+const map={occupied:0,uncleaned:1,broken:2,cleaning:3,inspection:4,vacant:5,office:6};
 document.querySelectorAll('.status-btn').forEach(b=>b.className=b.className.replace(/\bsel-\S+/g,'').trim());
 if(S.status&&map[S.status]!==undefined){
 const btns=document.querySelectorAll('.status-btn');
@@ -1372,11 +1375,11 @@ let _popupRunning = false;
 
 const STATUS_POPUP_ICON = {
   occupied:'●', uncleaned:'●', cleaning:'●',
-  inspection:'●', vacant:'●', broken:'●', cleaned:'●'
+  inspection:'●', vacant:'●', broken:'●', cleaned:'●', office:'●'
 };
 const STATUS_POPUP_COLOR = {
   occupied:'#9FB0D3', uncleaned:'#FF8A73', cleaning:'#F2B84B',
-  inspection:'#B6A3F0', vacant:'#6FD3A6', broken:'#AEB9BF', cleaned:'#B6A3F0'
+  inspection:'#B6A3F0', vacant:'#6FD3A6', broken:'#AEB9BF', cleaned:'#B6A3F0', office:'#A9B3BC'
 };
 
 function fmtPopupTime(iso){
@@ -1528,7 +1531,7 @@ try{
 const r=await api({action:'getReportData',dateFrom:from,dateTo:to});
 if(!r.ok){hideLoad();toast('데이터 로드 실패');return;}
 const KR_S={occupied:'재실',uncleaned:'미정비',cleaning:'정비중',
-inspection:'인스펙션필요',vacant:'공실완료',broken:'고장',cleaned:'인스펙션필요'};
+inspection:'인스펙션필요',vacant:'공실완료',broken:'고장',cleaned:'인스펙션필요',office:'사무실'};
 
 const tally={};
 r.rooms.forEach(function(rm){
