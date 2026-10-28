@@ -17,9 +17,9 @@
   --ink:#10242E; --fog:#EEF2F3; --linen:#FFFFFF; --tide:#1F6F78; --coral:#C4432F;
   --bg:#EEF2F3; --surface:#FFFFFF; --surface2:#F4F7F8; --border:#D3DDE0;
   --accent:#1F6F78; --text:#10242E; --text2:#51646C;
-  --occupied:#5B6B8C; --uncleaned:#C4432F; --cleaning:#A56800; --inspection:#6D4BB8; --vacant:#23785A; --broken:#4A555C;
-  --occupied-t:#E6EAF2; --uncleaned-t:#FBE6E1; --cleaning-t:#FAEFD6; --inspection-t:#EDE8F8; --vacant-t:#DFF1E8; --broken-t:#E3E8EA;
-  --occupied-s:#3F4D6B; --uncleaned-s:#9E2F1E; --cleaning-s:#7A4A00; --inspection-s:#51359B; --vacant-s:#17583F; --broken-s:#343E44;
+  --occupied:#5B6B8C; --uncleaned:#C4432F; --cleaning:#A56800; --inspection:#6D4BB8; --vacant:#23785A; --broken:#4A555C;--office:#7A8794;
+  --occupied-t:#E6EAF2; --uncleaned-t:#FBE6E1; --cleaning-t:#FAEFD6; --inspection-t:#EDE8F8; --vacant-t:#DFF1E8; --broken-t:#E3E8EA;--office-t:#F1F3F5;
+  --occupied-s:#3F4D6B; --uncleaned-s:#9E2F1E; --cleaning-s:#7A4A00; --inspection-s:#51359B; --vacant-s:#17583F; --broken-s:#343E44;--office-s:#4B5663;
   --radius:12px;
   --font-body:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Segoe UI',Roboto,sans-serif;
   --font-num:'Sora','Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',sans-serif;
@@ -192,11 +192,13 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .room-card.vacant{--t:var(--vacant-t);--bd:#A9D9C2;--c:var(--vacant);--s:var(--vacant-s);--lvl:4;}
 .room-card.broken{--t:var(--broken-t);--bd:#B7C0C5;--c:var(--broken);--s:var(--broken-s);--lvl:0;
   background-image:repeating-linear-gradient(135deg,rgba(74,85,92,.16) 0 5px,transparent 5px 10px);}
+.room-card.office{--t:var(--office-t);--bd:#A9B3BC;--c:var(--office);--s:var(--office-s);--lvl:0;border-style:dashed;opacity:.92;}
 .room-card::after{content:'';position:absolute;left:8px;right:8px;bottom:6px;height:5px;border-radius:2px;
   background:linear-gradient(to right,var(--c) 0 calc(var(--lvl) * 25%),var(--lvt) calc(var(--lvl) * 25%) 100%);
   -webkit-mask-image:repeating-linear-gradient(to right,#000 0 calc(25% - 2px),transparent calc(25% - 2px) 25%);
   mask-image:repeating-linear-gradient(to right,#000 0 calc(25% - 2px),transparent calc(25% - 2px) 25%);}
 .room-card.broken::after{display:none;}
+.room-card.office::after{display:none;}
 .room-card.cleaning-unassigned{outline:2.5px dashed var(--cleaning);outline-offset:-3px;}
 .room-card.card-selected{outline:4px solid var(--tide);outline-offset:-2px;box-shadow:0 0 0 2px #fff inset;}
 .room-card.assign-sel{outline-color:var(--vacant);}
@@ -284,12 +286,14 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .status-btn[data-s="cleaning"]{--c:var(--cleaning);}
 .status-btn[data-s="inspection"]{--c:var(--inspection);}
 .status-btn[data-s="vacant"]{--c:var(--vacant);}
+.status-btn[data-s="office"]{--c:var(--office);}
 .status-btn.sel-occupied{background:var(--occupied);border-color:var(--occupied);color:#fff;}
 .status-btn.sel-uncleaned{background:var(--uncleaned);border-color:var(--uncleaned);color:#fff;}
 .status-btn.sel-cleaning{background:var(--cleaning);border-color:var(--cleaning);color:#fff;}
 .status-btn.sel-inspection{background:var(--inspection);border-color:var(--inspection);color:#fff;}
 .status-btn.sel-vacant{background:var(--vacant);border-color:var(--vacant);color:#fff;}
 .status-btn.sel-broken{background:var(--broken);border-color:var(--broken);color:#fff;}
+.status-btn.sel-office{background:var(--office);border-color:var(--office);color:#fff;}
 .status-btn[class*="sel-"] svg,.status-btn[class*="sel-"] small{color:#fff;}
 .maid-input,.note-input{width:100%;padding:12px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;font-size:15px;outline:none;}
 .note-input{resize:none;height:90px;}
@@ -366,6 +370,7 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .bulk-s-inspection{background:var(--inspection);}
 .bulk-s-vacant{background:var(--vacant);}
 .bulk-s-broken{background:var(--broken);}
+.bulk-s-office{background:var(--office);}
 .assign-maid-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
 .assign-maid-btn{min-height:42px;}
 .bulk-assign-bar{display:none;}
@@ -529,6 +534,7 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 <button class="bulk-status-btn bulk-s-inspection" onclick="bulkSetStatus('inspection')" disabled>인스펙션<br><small>Inspection</small></button>
 <button class="bulk-status-btn bulk-s-vacant" onclick="bulkSetStatus('vacant')" disabled>공실완료<br><small>Vacant</small></button>
 <button class="bulk-status-btn bulk-s-broken" onclick="bulkSetStatus('broken')" disabled>고장<br><small>Broken</small></button>
+<button class="bulk-status-btn bulk-s-office" onclick="bulkSetStatus('office')" disabled>사무실<br><small>Office</small></button>
 </div>
 <div class="assign-maid-btns" id="assignMaidBtns" style="display:none"></div>
 </div>
@@ -567,6 +573,7 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 <button class="status-btn" id="statusBtnInspection" data-s="inspection" onclick="selStatus('inspection')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="10" cy="10" r="6"/><path d="M21 21l-5-5"/></svg><span class="sbLabel">인스펙션필요</span><br><small class="sbSub">Inspection</small></button>
 <button class="status-btn status-btn-admin" id="statusBtnVacant" data-s="vacant" onclick="selStatus('vacant')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4 12H1M23 12h-3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg><span class="sbLabel">공실완료</span><br><small class="sbSub">Vacant</small></button>
 </div>
+<div class="status-btns-row" style="grid-template-columns:1fr;margin-top:4px;"><button class="status-btn status-btn-admin" data-s="office" onclick="selStatus('office')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>사무실<br><small>Office · 정비 제외</small></button></div>
 </div>
 <div class="modal-section" id="maidSec"><label>메이드 배정 (관리자)</label><div class="maid-picker" id="maidPicker"></div><div class="maid-selected-display" id="maidSelectedDisplay"></div><input type="hidden" id="maidInput"></div>
 <div class="modal-section" id="stayDateSection" style="display:none"><label>퇴실 예정일 / Check-out date</label><div style="display:flex;gap:8px"><input type="date" id="stayDateInput" style="flex:1;padding:8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;"><button type="button" onclick="saveStayDate()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">변경</button></div><div id="stayDateHint" style="font-size:11px;color:var(--text2);margin-top:6px"></div></div>
