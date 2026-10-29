@@ -1,4 +1,5 @@
 const API = 'https://script.google.com/macros/s/AKfycbxXvijGfTXZ4tBnqizmhMS5hDlG4ZkOldsUV_T5eTq6-zSeMoRauGIvMRGxl7aWlMTK/exec';
+const APP_VER=(function(){try{return new URL(document.currentScript.src).searchParams.get('v')||'';}catch(e){return '';}})();
 let S = {
 role:null, name:'', rooms:[], filter:'all',
 room:null, status:null,
@@ -227,9 +228,10 @@ const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 const mpwBtn=$('maidPwBtn');if(mpwBtn)mpwBtn.style.display=S.role==='maid'?'block':'none';
 ['statCard0','statCard1','statCard4','statCard5'].forEach(function(id){var el=$(id);if(el)el.style.display=S.role==='admin'?'':'none';});
 applyMaidLang();showLoad(S.role==='maid'?t('loading'):'로딩 중...');
-if(S.role==='admin'){const mr=await api({action:'getMaids'});S.maids=(mr.ok&&mr.maids)?mr.maids:[];const tr=await api({action:'getTodayInspector'});S.todayInspector=(tr.ok&&tr.inspector)?tr.inspector:'';renderTodayInspectorBar();}
-if(S.role==='admin'){const cr=await api({action:'getCrossInspection'});if(cr.ok)S.crossInspection=cr.enabled;renderTodayInspectorBar();}
-await loadRooms();
+const _preP=S.role==='admin'?Promise.all([api({action:'getMaids'}),api({action:'getTodayInspector'}),api({action:'getCrossInspection'})]):null;
+const _roomsP=loadRooms();
+if(_preP){const _x=await _preP;const mr=_x[0],tr=_x[1],cr=_x[2];S.maids=(mr&&mr.ok&&mr.maids)?mr.maids:[];S.todayInspector=(tr&&tr.ok&&tr.inspector)?tr.inspector:'';if(cr&&cr.ok)S.crossInspection=cr.enabled;renderTodayInspectorBar();}
+await _roomsP;
 hideLoad();
 _syncStart();
 }
@@ -288,15 +290,16 @@ box.innerHTML=
 /* ── 동기화 루프: 객실+퇴실정보 병렬 조회 · 겹침 방지 · 복귀 즉시 갱신 · 상태 표시 · 실패 시 백오프 ── */
 const SYNC_MS=10000, SYNC_STALE_MS=45000, SYNC_TIMEOUT_MS=20000, SYNC_MAX_BACKOFF_MS=60000;
 const SYNC_TXT={
-  ko:{ok:'마지막 갱신 {t}',stale:'⚠ {n} 동안 갱신 안 됨 · 마지막 {t}',fail:'⚠ 갱신 실패 · 재시도 중 · 마지막 {t}',wait:'갱신 중...',us:'초',um:'분'},
-  en:{ok:'Updated {t}',stale:'⚠ No update for {n} · last {t}',fail:'⚠ Update failed · retrying · last {t}',wait:'Updating...',us:' s',um:' min'},
-  mn:{ok:'Сүүлд шинэчилсэн {t}',stale:'⚠ {n} шинэчлэгдээгүй · сүүлд {t}',fail:'⚠ Шинэчлэл амжилтгүй · дахин оролдож байна · сүүлд {t}',wait:'Шинэчилж байна...',us:' сек',um:' мин'}
+  ko:{ok:'마지막 갱신 {t}',stale:'⚠ {n} 동안 갱신 안 됨 · 마지막 {t}',fail:'⚠ 갱신 실패 · 재시도 중 · 마지막 {t}',wait:'갱신 중...',upd:'새 버전이 있습니다 · 눌러서 새로고침',us:'초',um:'분'},
+  en:{ok:'Updated {t}',stale:'⚠ No update for {n} · last {t}',fail:'⚠ Update failed · retrying · last {t}',wait:'Updating...',upd:'New version available · tap to refresh',us:' s',um:' min'},
+  mn:{ok:'Сүүлд шинэчилсэн {t}',stale:'⚠ {n} шинэчлэгдээгүй · сүүлд {t}',fail:'⚠ Шинэчлэл амжилтгүй · дахин оролдож байна · сүүлд {t}',wait:'Шинэчилж байна...',upd:'Шинэ хувилбар бий · дарж шинэчилнэ үү',us:' сек',um:' мин'}
 };
 let _syncP=null,_syncAgain=false,_syncForce=false,_syncTimer=null,_syncPaintTimer=null,_syncFails=0,_syncLastOk=0,_syncSig='',_syncKickAt=0;
 function _syncTxt(k){var d=SYNC_TXT[S.lang];return (d&&d[k])||SYNC_TXT.ko[k];}
 function _syncPaint(){
   var el=$('syncPill');if(!el)return;
   if(!S.role){el.textContent='';el.removeAttribute('data-state');return;}
+  if(_verNew){el.textContent=_syncTxt('upd');el.dataset.state='update';return;}
   var age=_syncLastOk?Date.now()-_syncLastOk:0;
   var ts=_syncLastOk?new Date(_syncLastOk).toLocaleTimeString('en-GB',{hour12:false,timeZone:'Asia/Seoul'}):'--:--:--';
   var st='ok',key='ok';
@@ -343,7 +346,7 @@ function _syncSchedule(){
   var d=_syncFails>0?Math.min(SYNC_MS*Math.pow(2,_syncFails),SYNC_MAX_BACKOFF_MS):SYNC_MS;
   _syncTimer=setTimeout(async function(){
     if(!S.role)return;
-    if(!document.hidden)await syncNow(false);
+    if(!document.hidden){await syncNow(false);if(++_verTick%6===0)_verCheck();}
     _syncSchedule();
   },d);
 }
@@ -352,12 +355,12 @@ function _syncKick(){
   var now=Date.now();
   if(now-_syncKickAt<1500)return;
   _syncKickAt=now;
-  syncNow(false).then(_syncSchedule);
+  syncNow(false).then(_syncSchedule);_verCheck();
 }
 function _syncStart(){
   clearTimeout(_syncTimer);clearInterval(_syncPaintTimer);
   _syncSchedule();
-  _syncPaintTimer=setInterval(_syncPaint,5000);
+  _syncPaintTimer=setInterval(_syncPaint,5000);_verCheck();
   _syncPaint();
 }
 function _syncStop(){
@@ -365,6 +368,38 @@ function _syncStop(){
   _syncTimer=null;_syncPaintTimer=null;_syncSig='';_syncLastOk=0;_syncFails=0;
   var el=$('syncPill');if(el){el.textContent='';el.removeAttribute('data-state');}
 }
+/* ── 새 버전 감지: version.json(캐시 우회)과 로드된 빌드(APP_VER)를 비교, 유휴 상태면 자동 새로고침 ── */
+let _verNew='',_verTick=0,_verBusy=false;
+function _idleNow(){
+  if(S.batchMode)return false;
+  if(document.querySelector('.modal-overlay.open,.report-modal-overlay.open,#roomModal.open'))return false;
+  var a=document.activeElement;
+  if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.value)return false;
+  return true;
+}
+function _applyUpdate(force){
+  if(!_verNew)return;
+  try{
+    var k='hk_reload_'+_verNew;
+    if(!force&&sessionStorage.getItem(k))return;
+    sessionStorage.setItem(k,'1');
+  }catch(e){}
+  location.replace(location.pathname+'?v='+encodeURIComponent(_verNew)+'&t='+Date.now());
+}
+async function _verCheck(){
+  if(_verBusy||!APP_VER)return;
+  _verBusy=true;
+  try{
+    var r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    var j=await r.json();
+    var v=j&&j.v?String(j.v):'';
+    if(v&&v!==APP_VER){_verNew=v;_syncPaint();if(S.role&&_idleNow())_applyUpdate(false);}
+    else if(_verNew){_verNew='';_syncPaint();}
+  }catch(e){}
+  finally{_verBusy=false;}
+}
+document.addEventListener('click',function(e){if(e.target&&e.target.id==='syncPill'&&_verNew)_applyUpdate(true);});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)_syncKick();});
 window.addEventListener('focus',_syncKick);
 window.addEventListener('online',_syncKick);
@@ -1188,7 +1223,7 @@ function renderTodayInspectorBar(){
   label.textContent='오늘의 인스펙터:';
   label.className='bar-label';
   bar.appendChild(label);
-  if(!inspectors.length){const em=document.createElement('span');em.className='bar-label';em.textContent='등록된 메이드가 없습니다';bar.appendChild(em);}
+  if(!inspectors.length&&S.maids!==undefined){const em=document.createElement('span');em.className='bar-label';em.textContent='등록된 메이드가 없습니다';bar.appendChild(em);}
   inspectors.forEach(function(n){
     const btn=document.createElement('button');
     btn.textContent=n;
