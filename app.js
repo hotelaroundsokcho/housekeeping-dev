@@ -825,7 +825,7 @@ const f=function(x){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seou
 const a=f(d),b=f(new Date());
 const hm=a.hour+':'+a.minute;
 if(a.year===b.year&&a.month===b.month&&a.day===b.day)return hm;
-return a.month+'/'+a.day+' '+hm;
+return parseInt(a.month,10)+'/'+parseInt(a.day,10);
 }
 const MAID_COLORS = ['#0E7490','#BE185D','#4D7C0F','#9A3412','#1D4ED8'];
 
