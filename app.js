@@ -329,9 +329,9 @@ async function _syncOnce(force){
 }
 function syncNow(force){
   if(force)_syncForce=true;
-  if(_syncP){_syncAgain=true;return _syncP;}
+  if(_syncP){if(force)_syncAgain=true;return _syncP;}
   _syncP=(async function(){
-    try{do{_syncAgain=false;var f=_syncForce;_syncForce=false;await _syncOnce(f);}while(_syncAgain);}
+    try{do{_syncAgain=false;var f=_syncForce;_syncForce=false;await _syncOnce(f);}while(_syncAgain&&_syncFails===0);}
     catch(e){_syncFails++;_syncPaint();}
     finally{_syncP=null;}
   })();
