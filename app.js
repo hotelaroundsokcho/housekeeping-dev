@@ -217,6 +217,17 @@ $('loginSubmitBtn').style.display='none';
 $('loginError').textContent='';
 document.querySelectorAll('.user-card').forEach(b=>b.classList.remove('active'));
 }
+async function _loadAdminPre(){
+  var tmo=function(p){return Promise.race([p,new Promise(function(res){setTimeout(function(){res({ok:false,error:'timeout'});},15000);})]);};
+  var x=await Promise.all([tmo(api({action:'getMaids'})),tmo(api({action:'getTodayInspector'})),tmo(api({action:'getCrossInspection'}))]);
+  var mr=x[0],tr=x[1],cr=x[2];
+  var okM=!!(mr&&mr.ok&&Array.isArray(mr.maids));
+  if(okM){S.maids=mr.maids;S._maidsFailed=false;}else{if(!Array.isArray(S.maids))S.maids=[];S._maidsFailed=true;}
+  if(tr&&tr.ok)S.todayInspector=tr.inspector||'';
+  if(cr&&cr.ok)S.crossInspection=cr.enabled;
+  renderTodayInspectorBar();
+  return okM;
+}
 async function go(){
 if(S.role==='maid'&&!MSTR[S.lang]){S.lang='';openLangPick();return;}
 applyLangUi();
@@ -228,9 +239,9 @@ const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 const mpwBtn=$('maidPwBtn');if(mpwBtn)mpwBtn.style.display=S.role==='maid'?'block':'none';
 ['statCard0','statCard1','statCard4','statCard5'].forEach(function(id){var el=$(id);if(el)el.style.display=S.role==='admin'?'':'none';});
 applyMaidLang();showLoad(S.role==='maid'?t('loading'):'로딩 중...');
-const _preP=S.role==='admin'?Promise.all([api({action:'getMaids'}),api({action:'getTodayInspector'}),api({action:'getCrossInspection'})]):null;
+const _preP=S.role==='admin'?_loadAdminPre():null;
 const _roomsP=loadRooms();
-if(_preP){const _x=await _preP;const mr=_x[0],tr=_x[1],cr=_x[2];S.maids=(mr&&mr.ok&&mr.maids)?mr.maids:[];S.todayInspector=(tr&&tr.ok&&tr.inspector)?tr.inspector:'';if(cr&&cr.ok)S.crossInspection=cr.enabled;renderTodayInspectorBar();}
+if(_preP){const _ok=await _preP;if(!_ok)setTimeout(function(){if(S.role==='admin')_loadAdminPre();},5000);}
 await _roomsP;
 hideLoad();
 _syncStart();
@@ -1221,7 +1232,7 @@ function renderTodayInspectorBar(){
   label.textContent='오늘의 인스펙터:';
   label.className='bar-label';
   bar.appendChild(label);
-  if(!inspectors.length&&S.maids!==undefined){const em=document.createElement('span');em.className='bar-label';em.textContent='등록된 메이드가 없습니다';bar.appendChild(em);}
+  if(!inspectors.length&&S.maids!==undefined&&!S._maidsFailed){const em=document.createElement('span');em.className='bar-label';em.textContent='등록된 메이드가 없습니다';bar.appendChild(em);}
   inspectors.forEach(function(n){
     const btn=document.createElement('button');
     btn.textContent=n;
