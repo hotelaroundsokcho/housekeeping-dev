@@ -303,7 +303,7 @@ async function renderCheckinSync(){
   if(!box)return;
   if(S.role!=='admin'){box.style.display='none';return;}
   const r=await api({action:'getCheckinSync'});
-  if(!r||(r.ok===false&&!r.error)){box.style.display='none';return;}
+  if(!r||(r.ok===false&&!r.error)||(r.ok===false&&/알 수 없는 action|unknown action/i.test(String(r.error||'')))){box.style.display='none';return;}
   box.style.display='block';
   const wasOpen=!!(box.querySelector('details')&&box.querySelector('details').open);
   const head='<details class="cb-details"'+(wasOpen?' open':'')+'><summary><b class="cb-title">체크인 시트 연동</b>';
