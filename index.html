@@ -92,12 +92,8 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .logout-btn:hover,.lang-btn:hover{background:#F5F8F8;}
 .lang-btn{display:none;font-weight:800;}
 #app[data-role="maid"] .lang-btn{display:inline-flex;}
-.nav-tabs{display:flex;background:#DCE5E7;border-radius:16px;padding:4px;gap:4px;margin:8px var(--gutter) 0;align-self:flex-start;min-width:240px;}
-.nav-tab{flex:1;padding:0 18px;min-height:40px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:14px;font-weight:700;color:var(--text2);cursor:pointer;border-radius:12px;white-space:nowrap;}
-.nav-tab.active{color:var(--ink);background:var(--surface);font-weight:800;}
 .content{flex:1;overflow-y:auto;padding:16px var(--gutter) 90px;transition:padding-bottom .15s;width:100%;}
-#app[data-role="maid"] .content,#app[data-role="maid"] #tabChat{max-width:520px;margin:0 auto;}
-#tabChat{width:100%;padding:0 var(--gutter);}
+#app[data-role="maid"] .content{max-width:520px;margin:0 auto;}
 
 /* ── 오늘의 수위 (히어로) + 상태 필터 칩 ── */
 .hero-row{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;align-items:stretch;}
@@ -289,11 +285,6 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .hk-foot{grid-column:1/-1;font-size:12px;color:var(--text2);text-align:center;line-height:1.4;padding:18px 8px 4px;}
 .hk-allclear{grid-column:1/-1;background:var(--vacant-t);color:var(--vacant-s);border-radius:20px;padding:18px;font-size:16px;font-weight:800;text-align:center;}
 
-/* ── 알림바 ── */
-.notif-bar{display:none;position:fixed;top:0;left:0;right:0;background:var(--ink);color:#fff;padding:10px 16px;z-index:500;font-size:13px;align-items:center;justify-content:space-between;gap:10px;}
-.notif-bar.show{display:flex;}
-.notif-allow-btn{background:#7FD1D8;color:var(--ink);border:none;border-radius:8px;min-height:38px;padding:0 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
-.notif-dismiss-btn{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;width:38px;height:38px;}
 .admin-name-select{display:none;margin-top:16px;}
 
 /* ── 모달 / 시트 (모바일: 바텀시트 · PC: 우측 상세 패널) ── */
@@ -367,18 +358,6 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .lang-close{display:none;width:100%;min-height:48px;margin-top:10px;background:transparent;border:none;color:var(--text2);font-size:14px;font-weight:700;cursor:pointer;}
 .lang-close.show{display:block;}
 
-/* ── 채팅 ── */
-.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 112px);height:calc(100dvh - 112px);}
-.chat-msgs{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px;}
-.chat-bubble{max-width:80%;padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.5;}
-.chat-bubble.mine{background:var(--tide);color:#fff;border-bottom-right-radius:6px;}
-.chat-bubble.other{background:var(--surface);color:var(--text);border-bottom-left-radius:6px;}
-.chat-sender{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:3px;}
-.chat-time{font-size:11px;opacity:.7;margin-top:4px;}
-.chat-input-row{padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;}
-.chat-input-row input{flex:1;min-height:46px;padding:0 16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:24px;font-size:16px;outline:none;}
-.chat-input-row input:focus{border-color:var(--tide);}
-.chat-send-btn{min-height:46px;padding:0 20px;background:var(--tide);color:#fff;border:none;border-radius:24px;font-size:15px;font-weight:700;cursor:pointer;}
 
 /* ── 로딩 · 토스트 ── */
 .spinner{display:inline-block;width:22px;height:22px;border:3px solid rgba(16,36,46,.15);border-top-color:var(--tide);border-radius:50%;animation:spin .7s linear infinite;}
@@ -457,7 +436,6 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 @media(max-width:699px){
   #app[data-role="admin"] .rooms-grid{padding:16px 14px 8px;border-radius:20px;columns:auto;}
   .hero-col{padding:18px;}
-  .nav-tabs{align-self:stretch;min-width:0;}
 }
 
 /* ── PC: 우측 상세 패널 (객실을 누르면 목록을 가리지 않고 오른쪽에 고정) ── */
@@ -476,7 +454,7 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 }
 
 /* ── 포커스 ── */
-button:focus-visible,.room-card:focus-visible,.stat-card:focus-visible,.nav-tab:focus-visible,.lang-pick-btn:focus-visible,.hk-row:focus-visible{outline:3px solid var(--tide);outline-offset:2px;}
+button:focus-visible,.room-card:focus-visible,.stat-card:focus-visible,.lang-pick-btn:focus-visible,.hk-row:focus-visible{outline:3px solid var(--tide);outline-offset:2px;}
 
 /* ── 보정 ── */
 #app[data-role="maid"] .toolbar{display:none;}
@@ -523,21 +501,10 @@ html[lang="mn"] .hk-row-sub{flex:1 1 0;}
 <div style="display:none"><div id="userGrid"></div><div id="loginPwGroup"></div><div id="loginPwLabel"></div><input id="loginPwInput"><button id="loginSubmitBtn"></button><div id="loginError"></div></div>
 </div>
 </div>
-<div class="notif-bar" id="notifBar">
-  <span>새 메시지 알림을 받으시겠어요?</span>
-  <div style="display:flex;align-items:center;gap:8px">
-    <button class="notif-allow-btn" onclick="requestNotifPermission()">알림 허용</button>
-    <button class="notif-dismiss-btn" onclick="document.getElementById('notifBar').classList.remove('show')">✕</button>
-  </div>
-</div>
 <div id="app">
 <div class="app-header">
 <div><div class="app-title"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>객실정비 현황</div><div class="sub" id="headerSub"></div></div>
 <div class="header-actions"><button class="icon-btn" id="soundToggleBtn" onclick="toggleSound()" title="알림 소리 ON" aria-label="알림 소리">🔔</button><button class="lang-btn" id="langBtn" onclick="openLangPick()" aria-label="Language"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg><span id="langBtnCode">KO</span></button><button class="logout-btn" id="logoutBtn" onclick="logout()">로그아웃</button></div>
-</div>
-<div class="nav-tabs">
-<div class="nav-tab active" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="showTab('rooms')">객실현황</div>
-<div class="nav-tab" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="showTab('chat')">채팅</div>
 </div>
 <div id="tabRooms" class="content">
 <div class="hero-row">
@@ -583,15 +550,6 @@ html[lang="mn"] .hk-row-sub{flex:1 1 0;}
 <button class="change-pin-btn" id="maidPwBtn" style="display:none" onclick="openMaidPwModal()">내 비밀번호 설정/변경</button>
 
 
-</div>
-<div id="tabChat" style="display:none">
-<div class="chat-wrap">
-<div class="chat-msgs" id="chatMsgs"></div>
-<div class="chat-input-row">
-<input type="text" id="chatInput" placeholder="메시지 입력..." onkeydown="if(event.key==='Enter')sendMsg()">
-<button class="chat-send-btn" onclick="sendMsg()">전송</button>
-</div>
-</div>
 </div>
 </div>
 <div class="bulk-bar" id="batchBar">
