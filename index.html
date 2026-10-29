@@ -365,6 +365,7 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .sync-pill[data-state="ok"],.sync-pill[data-state="wait"]{padding-left:0;padding-right:0;}
 .sync-pill[data-state="stale"]{background:#FFF1CC;color:#7A5200;}
 .sync-pill[data-state="fail"]{background:#FBE1DC;color:var(--coral);}
+.sync-pill[data-state="update"]{background:#DDEFF2;color:var(--tide-d);cursor:pointer;text-decoration:underline;}
 
 /* ── 로딩 · 토스트 ── */
 .spinner{display:inline-block;width:22px;height:22px;border:3px solid rgba(16,36,46,.15);border-top-color:var(--tide);border-radius:50%;animation:spin .7s linear infinite;}
@@ -731,7 +732,7 @@ html[lang="mn"] .hk-row-sub{flex:1 1 0;}
 </div>
 <div class="loading-overlay" id="loadingOv" style="display:none"><div class="loading-box"><div class="spinner"></div><p id="loadingMsg">처리 중...</p></div></div>
 <div class="toast" id="toast"></div>
-<script src="auth.js?v=v14"></script>
-<script src="app.js?v=v14"></script>
+<script src="auth.js?v=v15"></script>
+<script src="app.js?v=v15"></script>
 </body>
 </html>
