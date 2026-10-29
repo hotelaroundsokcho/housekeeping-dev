@@ -438,6 +438,7 @@ function _applyUpdate(force){
   }catch(e){}
   location.replace(location.pathname+'?v='+encodeURIComponent(_verNew)+'&t='+Date.now());
 }
+function _verNewer(a,b){var x=parseInt(String(a).replace(/\D/g,''),10),y=parseInt(String(b).replace(/\D/g,''),10);if(isNaN(x)||isNaN(y))return a!==b;return x>y;}
 async function _verCheck(){
   if(_verBusy||!APP_VER)return;
   _verBusy=true;
@@ -446,7 +447,7 @@ async function _verCheck(){
     if(!r.ok)return;
     var j=await r.json();
     var v=j&&j.v?String(j.v):'';
-    if(v&&v!==APP_VER){_verNew=v;_syncPaint();if(S.role&&_idleNow())_applyUpdate(false);}
+    if(v&&_verNewer(v,APP_VER)){_verNew=v;_syncPaint();if(S.role&&_idleNow())_applyUpdate(false);}
     else if(_verNew){_verNew='';_syncPaint();}
   }catch(e){}
   finally{_verBusy=false;}
