@@ -245,6 +245,13 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .room-stay-badge.stay-confirmed{background:rgba(255,255,255,.85);color:var(--vacant-s);}
 .room-stay-badge.stay-date{background:rgba(255,255,255,.8);color:var(--text2);}
 .room-stay-badge.stay-extended{background:rgba(255,255,255,.85);color:var(--inspection-s);}
+.room-stay-badge.stay-overdue{background:#fff;color:var(--uncleaned-s);font-weight:800;}
+.ov-board{border:1.5px solid var(--uncleaned-s);}
+.ov-title{font-size:15px;font-weight:800;color:var(--uncleaned-s);}
+.ov-sub{font-size:13px;color:var(--text2);margin-top:4px;line-height:1.45;}
+.ov-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.ov-chip{min-height:36px;padding:0 12px;border-color:var(--uncleaned-s);color:var(--uncleaned-s);}
+.ov-actions{margin-top:8px;}
 .room-maid-badge.warn{background:#fff;color:var(--cleaning-s);box-shadow:inset 0 0 0 1.5px var(--cleaning);}
 #app[data-role="admin"] .room-type-row{position:absolute;top:9px;right:8px;margin:0;}
 #app[data-role="admin"] .bed-badge{font-size:0;padding:0;width:18px;height:18px;line-height:18px;text-align:center;border-radius:6px;}
@@ -540,6 +547,7 @@ html[lang="mn"] .hk-row-sub{flex:1 1 0;}
 </div>
 </div>
 <div class="today-col">
+<div id="overdueBoard" class="panel ov-board" style="display:none"></div>
 <div id="checkoutBoard" class="panel" style="display:none"></div>
 <div id="checkinSyncBoard" class="panel" style="display:none"></div>
 <div id="todayInspectorBar" class="panel today-bar" style="display:none"></div>
@@ -740,7 +748,7 @@ html[lang="mn"] .hk-row-sub{flex:1 1 0;}
 </div>
 <div class="loading-overlay" id="loadingOv" style="display:none"><div class="loading-box"><div class="spinner"></div><p id="loadingMsg">처리 중...</p></div></div>
 <div class="toast" id="toast"></div>
-<script src="auth.js?v=v20"></script>
-<script src="app.js?v=v20"></script>
+<script src="auth.js?v=v21"></script>
+<script src="app.js?v=v21"></script>
 </body>
 </html>
