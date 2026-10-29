@@ -359,6 +359,13 @@ input,select,textarea{font-family:inherit;color:var(--text);}
 .lang-close.show{display:block;}
 
 
+/* ── 동기화 상태 ── */
+.sync-pill{display:inline-block;margin-top:3px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;line-height:1.5;color:var(--text2);}
+.sync-pill:empty{display:none;}
+.sync-pill[data-state="ok"],.sync-pill[data-state="wait"]{padding-left:0;padding-right:0;}
+.sync-pill[data-state="stale"]{background:#FFF1CC;color:#7A5200;}
+.sync-pill[data-state="fail"]{background:#FBE1DC;color:var(--coral);}
+
 /* ── 로딩 · 토스트 ── */
 .spinner{display:inline-block;width:22px;height:22px;border:3px solid rgba(16,36,46,.15);border-top-color:var(--tide);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -503,7 +510,7 @@ html[lang="mn"] .hk-row-sub{flex:1 1 0;}
 </div>
 <div id="app">
 <div class="app-header">
-<div><div class="app-title"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>객실정비 현황</div><div class="sub" id="headerSub"></div></div>
+<div><div class="app-title"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>객실정비 현황</div><div class="sub" id="headerSub"></div><div class="sync-pill" id="syncPill" role="status" aria-live="off"></div></div>
 <div class="header-actions"><button class="icon-btn" id="soundToggleBtn" onclick="toggleSound()" title="알림 소리 ON" aria-label="알림 소리">🔔</button><button class="lang-btn" id="langBtn" onclick="openLangPick()" aria-label="Language"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg><span id="langBtnCode">KO</span></button><button class="logout-btn" id="logoutBtn" onclick="logout()">로그아웃</button></div>
 </div>
 <div id="tabRooms" class="content">
