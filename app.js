@@ -243,6 +243,7 @@ const _preP=S.role==='admin'?_loadAdminPre():null;
 const _roomsP=loadRooms();
 if(_preP){const _ok=await _preP;if(!_ok)setTimeout(function(){if(S.role==='admin')_loadAdminPre();},5000);}
 await _roomsP;
+if(S.role==='admin')renderCheckinSync();
 hideLoad();
 _syncStart();
 }
@@ -296,6 +297,46 @@ box.innerHTML=
 '전환 예정: <b>'+names(r.due)+'</b></div>'+
 (r.unknown.length?'<div class="cb-warn">기록없음(직접 확인 필요): '+names(r.unknown)+'</div>':'')+
 '</details>';
+}
+async function renderCheckinSync(){
+  const box=$('checkinSyncBoard');
+  if(!box)return;
+  if(S.role!=='admin'){box.style.display='none';return;}
+  const r=await api({action:'getCheckinSync'});
+  if(!r||(r.ok===false&&!r.error)){box.style.display='none';return;}
+  box.style.display='block';
+  const wasOpen=!!(box.querySelector('details')&&box.querySelector('details').open);
+  const head='<details class="cb-details"'+(wasOpen?' open':'')+'><summary><b class="cb-title">체크인 시트 연동</b>';
+  const runBtn='<div class="cb-line"><button class="chip" id="ckRunBtn">지금 동기화</button></div>';
+  const bind=function(){const b=$('ckRunBtn');if(!b)return;b.addEventListener('click',async function(){b.disabled=true;b.textContent='동기화 중...';try{await api({action:'runCheckinSync',updaterName:S.name,updaterRole:S.role});}catch(e){}renderCheckinSync();});};
+  if(r.empty){box.innerHTML=head+'<span class="cb-sum">아직 연동 결과가 없습니다</span></summary><div class="cb-line">자동 실행(10분 간격)을 기다리거나 아래 버튼으로 바로 실행할 수 있습니다.</div>'+runBtn+'</details>';bind();return;}
+  if(r.ok===false){box.innerHTML=head+'<span class="cb-sum"><b class="warn">연동 오류</b></span></summary><div class="cb-warn">'+esc(r.error||'알 수 없는 오류')+'</div>'+runBtn+'</details>';bind();return;}
+  const at=r.at?new Date(r.at):null;
+  const ageMin=(at&&!isNaN(at.getTime()))?Math.round((Date.now()-at.getTime())/60000):null;
+  const hhmm=r.at?String(r.at).slice(11,16):'';
+  const hourNow=Number(new Date().toLocaleString('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',hour12:false}));
+  const stale=ageMin!==null&&ageMin>25&&hourNow>=8;
+  const SL={uncleaned:'미정비',cleaning:'정비중',inspection:'인스펙션',departing:'퇴실 전',broken:'고장',office:'사무실'};
+  const nm=function(list){return list&&list.length?list.map(function(x){return esc(x)+'호';}).join(', '):'없음';};
+  const md=function(d){return d?String(d).slice(5).replace('-','/'):'';};
+  const ar=r.arrivals||{total:0,withRoom:0,noRoom:0};
+  const nr=r.notReady||[],mm=r.mismatches||[],on=r.occupiedNoSheet||[],iv=r.invalidRoom||[],up=r.updated||[];
+  const chk=mm.length+on.length+iv.length;
+  let html=head+'<span class="cb-sum">오늘 입실 <b>'+ar.total+'</b>'+(ar.noRoom?' · 객실 미입력 <b class="warn">'+ar.noRoom+'</b>':'')+(nr.length?' · 준비 안 됨 <b class="warn">'+nr.length+'</b>':'')+'</span>';
+  html+='<span class="cb-flag '+(stale?'off':'on')+'">'+(stale?'⚠ 연동 '+ageMin+'분 전':'연동 '+hhmm)+'</span></summary>';
+  html+='<div class="cb-cells">'+
+    '<div class="cb-cell"><b>'+ar.total+'</b><span>오늘 입실</span></div>'+
+    '<div class="cb-cell'+(ar.noRoom?' warn':'')+'"><b>'+ar.noRoom+'</b><span>객실 미입력</span></div>'+
+    '<div class="cb-cell'+(nr.length?' hot':'')+'"><b>'+nr.length+'</b><span>준비 안 됨</span></div>'+
+    '<div class="cb-cell'+(chk?' warn':'')+'"><b>'+chk+'</b><span>확인 필요</span></div></div>';
+  html+='<div class="cb-line">입실 객실 중 준비 안 됨: <b>'+(nr.length?nr.map(function(x){return esc(x.roomNo)+'호('+(SL[x.status]||esc(x.status))+')';}).join(', '):'없음')+'</b><br>'+
+    '시트상 오늘 퇴실: <b>'+nm(r.departuresToday)+'</b>'+
+    (up.length?'<br>퇴실일 자동 반영: <b>'+up.map(function(x){return esc(x.roomNo)+'호(→'+md(x.to)+')';}).join(', ')+'</b>':'')+'</div>';
+  if(mm.length)html+='<div class="cb-warn">퇴실일 불일치(직접 설정한 값 유지): '+mm.map(function(x){return esc(x.roomNo)+'호 앱 '+md(x.app)+' · 시트 '+md(x.sheet);}).join(', ')+'</div>';
+  if(on.length)html+='<div class="cb-warn">재실인데 시트에서 못 찾음: '+nm(on)+'</div>';
+  if(iv.length)html+='<div class="cb-warn">시트의 객실번호 확인 필요: '+iv.map(function(x){return esc(x);}).join(', ')+'</div>';
+  html+=runBtn+'</details>';
+  box.innerHTML=html;bind();
 }
 
 /* ── 동기화 루프: 객실+퇴실정보 병렬 조회 · 겹침 방지 · 복귀 즉시 갱신 · 상태 표시 · 실패 시 백오프 ── */
@@ -357,7 +398,7 @@ function _syncSchedule(){
   var d=_syncFails>0?Math.min(SYNC_MS*Math.pow(2,_syncFails),SYNC_MAX_BACKOFF_MS):SYNC_MS;
   _syncTimer=setTimeout(async function(){
     if(!S.role)return;
-    if(!document.hidden){await syncNow(false);if(++_verTick%6===0)_verCheck();}
+    if(!document.hidden){await syncNow(false);if(++_verTick%6===0){_verCheck();if(S.role==='admin')renderCheckinSync();}}
     _syncSchedule();
   },d);
 }
