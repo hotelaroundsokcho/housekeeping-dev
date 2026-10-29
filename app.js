@@ -906,8 +906,69 @@ const STATUS_ICON = {
   office:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>'
 };
 
+/* ── 체크아웃 미완료 경고 (관리자 전용) ──
+   퇴실예정일이 지났거나, 오늘이면 11:00(KST) 이후에도 '재실'인 객실을 표시만 한다.
+   상태는 자동으로 바꾸지 않는다(투숙 중 객실에 메이드가 진입하는 사고 방지). 변경은 관리자가 확인 후 수동. */
+const OVERDUE_FROM_MIN=11*60;
+let _ovSig='';
+function _kstMinutes(){
+  try{
+    const p=new Date().toLocaleString('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).split(':');
+    return (Number(p[0])%24)*60+Number(p[1]);
+  }catch(e){return -1;}
+}
+function overdueRoomNos(){
+  if(S.role!=='admin'||!S.stays||!S.stayToday||!Array.isArray(S.rooms))return [];
+  const m=_kstMinutes();
+  if(m<0)return [];
+  const out=[];
+  S.rooms.forEach(function(r){
+    if(r.status!=='occupied')return;
+    const no=String(r.roomNo);
+    const s=S.stays[no];
+    if(!s||!s.checkoutDate)return;
+    if(s.checkoutDate<S.stayToday||(s.checkoutDate===S.stayToday&&m>=OVERDUE_FROM_MIN))out.push(no);
+  });
+  return out.sort(function(a,b){return a.localeCompare(b,'ko',{numeric:true});});
+}
+function paintOverdueBoard(list){
+  const box=$('overdueBoard');
+  if(!box)return;
+  if(S.role!=='admin'||!list.length){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='block';
+  box.innerHTML=
+    '<div class="ov-title">⚠ 체크아웃 미완료 <b>'+list.length+'</b>실</div>'+
+    '<div class="ov-sub">퇴실예정일이 지났는데 아직 재실입니다. 투숙 여부를 확인한 뒤 변경하세요. 연장이면 퇴실예정일을 수정합니다.</div>'+
+    '<div class="ov-chips"></div>'+
+    '<div class="ov-actions"><button type="button" class="chip" id="ovBatchBtn">일괄 선택 후 상태 변경</button></div>';
+  const chips=box.querySelector('.ov-chips');
+  list.forEach(function(no){
+    const b=document.createElement('button');
+    b.type='button';b.className='chip ov-chip';b.textContent=no+'호';
+    b.addEventListener('click',function(){openRoom(no);});
+    chips.appendChild(b);
+  });
+  const bb=$('ovBatchBtn');
+  if(bb)bb.addEventListener('click',function(){
+    const nos=list.slice();
+    if(!S.batchMode)toggleBatchMode();
+    S.batchSelected=new Set(nos);
+    updateBatchBar();render();
+  });
+}
+/* 1분마다 11:00 경계·날짜 경계를 확인해 변화가 있을 때만 다시 그린다 */
+setInterval(function(){
+  if(S.role!=='admin')return;
+  const sig=overdueRoomNos().join(',');
+  if(sig!==_ovSig)render();
+},60000);
+
 function render(){
   let rooms=S.rooms.map(r=>r.status==='cleaned'?{...r,status:'inspection'}:r);
+  const _ovList=overdueRoomNos();
+  _ovSig=_ovList.join(',');
+  window.__ovSet=new Set(_ovList);
+  paintOverdueBoard(_ovList);
   if(S.filter!=='all')rooms=rooms.filter(x=>x.status===S.filter);
   if(S.maidFilter)rooms=rooms.filter(x=>x.maidName&&x.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.maidFilter.toLowerCase()));
 
@@ -1061,6 +1122,8 @@ function buildCard(room, isDone){
   if(room.status==='uncleaned'&&_stay){
     if(_stay.statusSource==='timeout')stayHtml='<div class="room-stay-badge stay-unconfirmed">⚠ 퇴실 미확인</div>';
     else if(_stay.statusSource==='url')stayHtml='<div class="room-stay-badge stay-confirmed">✓ 퇴실 확인</div>';
+  }else if(room.status==='occupied'&&window.__ovSet&&window.__ovSet.has(no)){
+    stayHtml='<div class="room-stay-badge stay-overdue">⚠ 퇴실 미완료</div>';
   }else if(room.status==='occupied'&&_stay&&_stay.checkoutDate){
     stayHtml='<div class="room-stay-badge stay-date'+(_stay.checkoutDate>(S.stayToday||'')?' stay-extended':'')+'">퇴실 '+esc(_stay.checkoutDate.slice(5).replace('-','/'))+'</div>';
   }
