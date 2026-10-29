@@ -1,7 +1,7 @@
 const API = 'https://script.google.com/macros/s/AKfycbxXvijGfTXZ4tBnqizmhMS5hDlG4ZkOldsUV_T5eTq6-zSeMoRauGIvMRGxl7aWlMTK/exec';
 let S = {
 role:null, name:'', rooms:[], filter:'all',
-room:null, status:null, chatSince:null,
+room:null, status:null,
 isInspector:false, batchMode:false, batchSelected:new Set(), batchAction:'status',
 todayInspector:'',
   crossInspection:false,
@@ -208,7 +208,7 @@ clearInterval(timer);
 sessionStorage.removeItem('hk_role');
 sessionStorage.removeItem('hk_name');
 sessionStorage.removeItem('hk_maid_pwset');
-S={role:null,name:'',rooms:[],filter:'all',room:null,status:null,chatSince:null,batchMode:false,batchSelected:new Set(),batchAction:'status',maidPasswordSet:false,pendingLoginUser:null};_prevRoomMap=null;_popupQueue=[];_popupRunning=false;
+S={role:null,name:'',rooms:[],filter:'all',room:null,status:null,batchMode:false,batchSelected:new Set(),batchAction:'status',maidPasswordSet:false,pendingLoginUser:null};_prevRoomMap=null;_popupQueue=[];_popupRunning=false;
 $('loginScreen').style.display='flex';$('app').style.display='none';
 const pwEl=$('loginPwInput');if(pwEl)pwEl.value='';
 $('loginPwGroup').style.display='none';
@@ -231,13 +231,8 @@ if(S.role==='admin'){const mr=await api({action:'getMaids'});S.maids=(mr.ok&&mr.
 if(S.role==='admin'){const cr=await api({action:'getCrossInspection'});if(cr.ok)S.crossInspection=cr.enabled;renderTodayInspectorBar();}
 await loadRooms();
 hideLoad();
-maybeShowNotifBar();
 clearInterval(timer);
-timer=setInterval(()=>{
-const tab=document.querySelector('.nav-tab.active');
-if(tab&&tab.textContent.includes('객실'))loadRooms(true);
-else loadChat(true);
-},15000);
+timer=setInterval(()=>{loadRooms(true);},15000);
 }
 async function loadStays(){
 try{
@@ -1081,11 +1076,6 @@ if(m!==(S.room.maidName||''))calls.push(api({action:'assignMaid',roomNo:S.room.r
 const n=$('noteInput').value.trim();
 if(n){
   calls.push(api({action:'addRoomNote',roomNo:S.room.roomNo,sender:S.name,role:S.role,note:n}));
-  // 패키지 A: 인스펙터/관리자가 메모 입력 시 담당 메이드에게 채팅 자동 발송
-  if((S.role==='admin'||S.isInspector)&&S.room.maidName){
-    const _noteMsg='📋 '+S.room.roomNo+'호 메모 ('+S.name+' → '+S.room.maidName+'): "'+n+'"';
-    calls.push(api({action:'sendChat',sender:S.name,role:S.role,message:_noteMsg}));
-  }
 }
 const newInsp=document.getElementById('inspectorOverridePicker');
 if(newInsp&&S.room&&S.room.status==='inspection'&&newInsp.dataset.changed==='1'){
@@ -1099,9 +1089,6 @@ if(!_nm&&!_cm)setTimeout(function(){toast('⚠️ '+S.room.roomNo+'호 메이드
 }
 const _canInspect=S.role==='admin'||(S.role==='maid'&&(S.isInspector||(S.room.maidName&&S.room.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()))));
 if(_canInspect&&prevStatus==='inspection'&&S.status==='vacant'){
-const _chatSender=S.role==='admin'?'관리자':S.name;
-const _chatMsg=(S.role==='admin'&&S.room.maidName)?'✅ '+S.room.roomNo+'호 점검 통과 / Inspection Passed! 공실완료 / Vacant, 체크인 준비완료 / Ready for Check-in. ('+S.room.maidName+' 님 수고하셨습니다 👍)':'✅ '+S.room.roomNo+'호 인스펙션 완료 / Inspection Done! 공실완료 / Vacant. (담당: '+S.name+')';
-await api({action:'sendChat',sender:_chatSender,role:S.role,message:_chatMsg});
 await api({action:'assignMaid',roomNo:S.room.roomNo,maidName:''});
 }
 await loadRooms(true);hideLoad();
@@ -1238,62 +1225,7 @@ toast('✅ 비밀번호가 저장되었습니다');
 $('mpwError').textContent=r.error||'저장 실패';
 }
 }
-async function loadChat(s=false){
-try{
-const r=await api({action:'getChat',since:S.chatSince});
-if(r.ok&&r.messages&&r.messages.length){
-S.chatSince=r.messages[r.messages.length-1].timestamp;addMsgs(r.messages);
-}
-}catch(e){}
-}
-function addMsgs(msgs){
-const box=$('chatMsgs');
-msgs.forEach(function(m){
-const mine=m.sender===S.name;
-if(!mine){sendChatNotif(m);if(document.visibilityState==='visible')playChatAlert();}
-const d=document.createElement('div');
-d.style.cssText='display:flex;flex-direction:column;align-items:'+(mine?'flex-end':'flex-start');
-d.innerHTML=(!mine?'<div class="chat-sender">'+m.sender+' ('+(m.role==='admin'?'관리자':'메이드')+')</div>':'')+
-'<div class="chat-bubble '+(mine?'mine':'other')+'">'+esc(m.message)+'<div class="chat-time">'+fmt(m.timestamp)+'</div></div>';
-box.appendChild(d);
-});
-box.scrollTop=box.scrollHeight;
-}
-async function sendMsg(){const inp=$('chatInput');const m=inp.value.trim();if(!m)return;inp.value='';try{await api({action:'sendChat',sender:S.name,role:S.role,message:m});await loadChat(true);}catch(e){toast('전송실패');}}
-function showTab(tab){document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='rooms')===(i===0)));$('tabRooms').style.display=tab==='rooms'?'block':'none';$('tabChat').style.display=tab==='chat'?'block':'none';if(tab==='chat'){S.chatSince=null;$('chatMsgs').innerHTML='';loadChat();}}
 function fmt(iso){if(!iso)return'';return new Date(iso).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}
-function requestNotifPermission(){
-if(!('Notification' in window)){toast('이 브라우저는 알림을 지원하지 않습니다');return;}
-Notification.requestPermission().then(function(perm){
-const bar=$('notifBar');
-if(perm==='granted'){
-if(bar)bar.classList.remove('show');
-toast('✅ 알림이 허용되었습니다');
-new Notification('Hotel Around Sokcho',{body:'새 메시지 알림 활성화 🔔',icon:'/housekeeping/favicon.ico'});
-}else{
-if(bar)bar.classList.remove('show');
-toast('알림 거부');
-}
-});
-}
-function maybeShowNotifBar(){
-if(!('Notification' in window))return;
-if(Notification.permission==='default'){
-const bar=$('notifBar');
-if(bar)bar.classList.add('show');
-}
-}
-function sendChatNotif(msg){
-if(!('Notification' in window))return;
-if(Notification.permission!=='granted')return;
-if(document.visibilityState==='visible')return;
-const sl=msg.role==='admin'?'관리자':'메이드';
-new Notification('💬 '+msg.sender+' ('+sl+')',{
-body:msg.message.length>60?msg.message.substring(0,60)+'…':msg.message,
-icon:'/housekeeping/favicon.ico',tag:'hk-chat'
-});
-
-  playChatAlert();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ══════════════════════════════════════════════
@@ -1361,10 +1293,6 @@ function vibrate(pattern){
   if(navigator.vibrate) navigator.vibrate(pattern||[100]);
 }
 
-function playChatAlert(){
-  playSound('chat');
-  vibrate([80]);
-}
 
 function playStatusAlert(){
   playSound('status');
