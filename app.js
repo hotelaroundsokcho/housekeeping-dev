@@ -298,7 +298,7 @@ function _syncPaint(){
   var el=$('syncPill');if(!el)return;
   if(!S.role){el.textContent='';el.removeAttribute('data-state');return;}
   var age=_syncLastOk?Date.now()-_syncLastOk:0;
-  var ts=_syncLastOk?new Date(_syncLastOk).toLocaleTimeString('ko-KR',{hour12:false,timeZone:'Asia/Seoul'}):'--:--:--';
+  var ts=_syncLastOk?new Date(_syncLastOk).toLocaleTimeString('en-GB',{hour12:false,timeZone:'Asia/Seoul'}):'--:--:--';
   var st='ok',key='ok';
   if(_syncFails>0){st='fail';key='fail';}
   else if(!_syncLastOk){st='wait';key='wait';}
