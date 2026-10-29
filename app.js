@@ -820,14 +820,12 @@ c.classList.toggle('active-maid', !!name && c.dataset.maid===name);
 
 function fmtCardTime(iso){
 if(!iso)return'';
-const d=new Date(iso);
-const now=new Date();
-const isToday=d.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'})===now.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'});
-if(isToday){
-return d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
-}else{
-return d.toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric'})+' '+d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
-}
+const d=new Date(iso);if(isNaN(d.getTime()))return'';
+const f=function(x){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(x),o={};p.forEach(function(q){o[q.type]=q.value;});return o;};
+const a=f(d),b=f(new Date());
+const hm=a.hour+':'+a.minute;
+if(a.year===b.year&&a.month===b.month&&a.day===b.day)return hm;
+return a.month+'/'+a.day+' '+hm;
 }
 const MAID_COLORS = ['#0E7490','#BE185D','#4D7C0F','#9A3412','#1D4ED8'];
 
