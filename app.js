@@ -204,7 +204,7 @@ $('changePinModal').classList.add('open');
 }
 
 function logout(){AUTH.onLogout();
-clearInterval(timer);
+clearInterval(timer);_syncStop();
 sessionStorage.removeItem('hk_role');
 sessionStorage.removeItem('hk_name');
 sessionStorage.removeItem('hk_maid_pwset');
@@ -231,8 +231,7 @@ if(S.role==='admin'){const mr=await api({action:'getMaids'});S.maids=(mr.ok&&mr.
 if(S.role==='admin'){const cr=await api({action:'getCrossInspection'});if(cr.ok)S.crossInspection=cr.enabled;renderTodayInspectorBar();}
 await loadRooms();
 hideLoad();
-clearInterval(timer);
-timer=setInterval(()=>{loadRooms(true);},15000);
+_syncStart();
 }
 async function loadStays(){
 try{
@@ -286,12 +285,93 @@ box.innerHTML=
 '</details>';
 }
 
+/* ── 동기화 루프: 객실+퇴실정보 병렬 조회 · 겹침 방지 · 복귀 즉시 갱신 · 상태 표시 · 실패 시 백오프 ── */
+const SYNC_MS=10000, SYNC_STALE_MS=45000, SYNC_TIMEOUT_MS=20000, SYNC_MAX_BACKOFF_MS=60000;
+const SYNC_TXT={
+  ko:{ok:'마지막 갱신 {t}',stale:'⚠ {n} 동안 갱신 안 됨 · 마지막 {t}',fail:'⚠ 갱신 실패 · 재시도 중 · 마지막 {t}',wait:'갱신 중...',us:'초',um:'분'},
+  en:{ok:'Updated {t}',stale:'⚠ No update for {n} · last {t}',fail:'⚠ Update failed · retrying · last {t}',wait:'Updating...',us:' s',um:' min'},
+  mn:{ok:'Сүүлд шинэчилсэн {t}',stale:'⚠ {n} шинэчлэгдээгүй · сүүлд {t}',fail:'⚠ Шинэчлэл амжилтгүй · дахин оролдож байна · сүүлд {t}',wait:'Шинэчилж байна...',us:' сек',um:' мин'}
+};
+let _syncP=null,_syncAgain=false,_syncForce=false,_syncTimer=null,_syncPaintTimer=null,_syncFails=0,_syncLastOk=0,_syncSig='',_syncKickAt=0;
+function _syncTxt(k){var d=SYNC_TXT[S.lang];return (d&&d[k])||SYNC_TXT.ko[k];}
+function _syncPaint(){
+  var el=$('syncPill');if(!el)return;
+  if(!S.role){el.textContent='';el.removeAttribute('data-state');return;}
+  var age=_syncLastOk?Date.now()-_syncLastOk:0;
+  var ts=_syncLastOk?new Date(_syncLastOk).toLocaleTimeString('ko-KR',{hour12:false,timeZone:'Asia/Seoul'}):'--:--:--';
+  var st='ok',key='ok';
+  if(_syncFails>0){st='fail';key='fail';}
+  else if(!_syncLastOk){st='wait';key='wait';}
+  else if(age>SYNC_STALE_MS){st='stale';key='stale';}
+  var sec=Math.round(age/1000);
+  var n=sec<60?sec+_syncTxt('us'):Math.floor(sec/60)+_syncTxt('um');
+  el.textContent=_syncTxt(key).replace('{t}',ts).replace('{n}',n);
+  el.dataset.state=st;
+}
+async function _syncOnce(force){
+  if(!S.role)return;
+  var tmo=function(p){return Promise.race([p,new Promise(function(res){setTimeout(function(){res({ok:false,error:'timeout'});},SYNC_TIMEOUT_MS);})]);};
+  var r=null,st=null;
+  try{var x=await Promise.all([tmo(api({action:'getRooms'})),tmo(api({action:'getStays'}))]);r=x[0];st=x[1];}catch(e){r=null;}
+  if(!S.role)return;
+  if(r&&r.ok&&Array.isArray(r.rooms)){
+    _syncFails=0;_syncLastOk=Date.now();
+    if(st&&st.ok&&Array.isArray(st.stays)){var m={};st.stays.forEach(function(s){m[String(s.roomNo)]=s;});S.stays=m;S.stayToday=st.today||'';}
+    var sig=JSON.stringify(r.rooms)+'|'+JSON.stringify(S.stays||{})+'|'+(S.stayToday||'');
+    if(force||sig!==_syncSig){
+      _syncSig=sig;
+      detectRoomChanges(r.rooms);S.rooms=r.rooms;
+      render();stats();maidStats();
+      if(S.role==='admin'){renderTodayInspectorBar();renderCheckoutBoard();}
+    }
+  }else{_syncFails++;}
+  _syncPaint();
+}
+function syncNow(force){
+  if(force)_syncForce=true;
+  if(_syncP){_syncAgain=true;return _syncP;}
+  _syncP=(async function(){
+    try{do{_syncAgain=false;var f=_syncForce;_syncForce=false;await _syncOnce(f);}while(_syncAgain);}
+    catch(e){_syncFails++;_syncPaint();}
+    finally{_syncP=null;}
+  })();
+  return _syncP;
+}
+function _syncSchedule(){
+  clearTimeout(_syncTimer);
+  if(!S.role)return;
+  var d=_syncFails>0?Math.min(SYNC_MS*Math.pow(2,_syncFails),SYNC_MAX_BACKOFF_MS):SYNC_MS;
+  _syncTimer=setTimeout(async function(){
+    if(!S.role)return;
+    if(!document.hidden)await syncNow(false);
+    _syncSchedule();
+  },d);
+}
+function _syncKick(){
+  if(!S.role||document.hidden)return;
+  var now=Date.now();
+  if(now-_syncKickAt<1500)return;
+  _syncKickAt=now;
+  syncNow(false).then(_syncSchedule);
+}
+function _syncStart(){
+  clearTimeout(_syncTimer);clearInterval(_syncPaintTimer);
+  _syncSchedule();
+  _syncPaintTimer=setInterval(_syncPaint,5000);
+  _syncPaint();
+}
+function _syncStop(){
+  clearTimeout(_syncTimer);clearInterval(_syncPaintTimer);
+  _syncTimer=null;_syncPaintTimer=null;_syncSig='';_syncLastOk=0;_syncFails=0;
+  var el=$('syncPill');if(el){el.textContent='';el.removeAttribute('data-state');}
+}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)_syncKick();});
+window.addEventListener('focus',_syncKick);
+window.addEventListener('online',_syncKick);
+window.addEventListener('pageshow',function(e){if(e.persisted)_syncKick();});
 async function loadRooms(silent=false){
-try{
-const r=await api({action:'getRooms'});
-if(r.ok){detectRoomChanges(r.rooms);S.rooms=r.rooms;await loadStays();render();stats();maidStats();if(S.role==='admin'){renderTodayInspectorBar();renderCheckoutBoard();}}
-else if(!silent)toast('로드실패');
-}catch(e){if(!silent)toast('오류');}
+  await syncNow(true);
+  if(!silent&&_syncFails>0)toast(t('loadFail'));
 }
 
 function stats(){
