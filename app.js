@@ -1301,7 +1301,7 @@ if(btns[map[S.status]])btns[map[S.status]].classList.add('sel-'+S.status);
 async function saveRoom(){
 if(!S.room)return;
 const prevStatus=S.room.status;
-showLoad('저장 중...');
+const _stSaved=S.status;
 try{
 const calls=[];
 if(S.status&&S.status!==prevStatus)
@@ -1318,19 +1318,32 @@ const newInsp=document.getElementById('inspectorOverridePicker');
 if(newInsp&&S.room&&S.room.status==='inspection'&&newInsp.dataset.changed==='1'){
   calls.push(api({action:'assignInspector',roomNo:S.room.roomNo,inspectorName:newInsp.value}));
 }
-await Promise.all(calls);
-if(S.status==='cleaning'){
+const _roomSaved=S.room;
+const _maidSaved=(S.role==='admin')?$('maidInput').value.trim():null;
+try{
+  const _ro=S.rooms.find(function(x){return String(x.roomNo)===String(_roomSaved.roomNo);});
+  if(_ro){
+    if(_stSaved&&_stSaved!==prevStatus)_ro.status=_stSaved;
+    if(_maidSaved!==null)_ro.maidName=_maidSaved;
+    render();stats();maidStats();
+  }
+}catch(_e){}
+$('roomModal').classList.remove('open');
+toast('저장 중...');
+const _res=await Promise.all(calls);
+const _bad=_res.find(function(x){return x&&x.ok===false;});
+if(_bad){toast('저장실패: '+(_bad.error||''));await loadRooms(true);return;}
+if(_stSaved==='cleaning'){
 const _nm=$('maidInput').value.trim();
 const _cm=S.room.maidName||'';
 if(!_nm&&!_cm)setTimeout(function(){toast('⚠️ '+S.room.roomNo+'호 메이드 미배정 상태로 정비중 전환되었습니다');},400);
 }
 const _canInspect=S.role==='admin'||(S.role==='maid'&&(S.isInspector||(S.room.maidName&&S.room.maidName.split(',').map(n=>n.trim().toLowerCase()).includes(S.name.toLowerCase()))));
-if(_canInspect&&prevStatus==='inspection'&&S.status==='vacant'){
+if(_canInspect&&prevStatus==='inspection'&&_stSaved==='vacant'){
 await api({action:'assignMaid',roomNo:S.room.roomNo,maidName:''});
 }
-await loadRooms(true);hideLoad();
-$('roomModal').classList.remove('open');toast('✅ 저장완료');
-}catch(e){hideLoad();toast('저장실패');}
+await loadRooms(true);toast('✅ 저장완료');
+}catch(e){hideLoad();toast('저장실패');try{await loadRooms(true);}catch(_e2){}}
 }
 
 
