@@ -1518,6 +1518,7 @@ function renderTodayMaidBar(tally){
     bar.appendChild(clr);
   }
 }
+const INSPECTOR_EXCLUDE=['장경순'];
 function renderTodayInspectorBar(){
   const bar=$('todayInspectorBar');
   if(!bar)return;
@@ -1527,7 +1528,7 @@ function renderTodayInspectorBar(){
   const inspectors=Array.isArray(S.maids)?S.maids:[];
   const _lc=function(x){return String(x||'').trim().toLowerCase();};
   const _maidSet=new Set(inspectors.map(_lc));
-  const staff=(Array.isArray(S.adminNames)?S.adminNames:[]).filter(function(n){return n&&!_maidSet.has(_lc(n));});
+  const staff=(Array.isArray(S.adminNames)?S.adminNames:[]).filter(function(n){return n&&!_maidSet.has(_lc(n))&&INSPECTOR_EXCLUDE.indexOf(_lc(n))<0;});
   if(!S._adminLoadTried){S._adminLoadTried=true;loadAdminNames().then(function(){try{renderTodayInspectorBar();}catch(e){}});}
   const label=document.createElement('span');
   label.textContent='오늘의 인스펙터:';
