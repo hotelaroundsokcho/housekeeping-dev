@@ -348,7 +348,7 @@
         fBtn.disabled = true;
         try {
           var r3 = await api({ action: 'createAccount', id: id, name: nm, role: fRole.value, maidName: fMaid.value.trim(), password: await A.pre(id, pw) });
-          if (r3 && r3.ok) A.renderPanel('all'); else { fBtn.disabled = false; alert((r3 && r3.error) || '계정 생성 실패'); }
+          if (r3 && r3.ok) { try { if (window.syncMaids) window.syncMaids(); } catch (e2) { /* 무시 */ } A.renderPanel('all'); } else { fBtn.disabled = false; alert((r3 && r3.error) || '계정 생성 실패'); }
         } catch (e) { fBtn.disabled = false; alert(String(e.message || e)); }
       });
       [fId, fName, fRole, fMaid, fPw, fBtn, fMsg].forEach(function (el) { addForm.appendChild(el); });
@@ -367,7 +367,7 @@
       row.appendChild(h('div', { class: 't', text: a.name + '  (' + a.id + ')' }));
       row.appendChild(h('div', { class: 's', text: statusLabel(a.status) + (a.role ? ' · ' + roleLabel(a.role) : '') + (a.createdAt ? ' · 신청 ' + a.createdAt.slice(0, 16).replace('T', ' ') : '') + (a.lastLogin ? ' · 최근 ' + a.lastLogin.slice(0, 16).replace('T', ' ') : '') }));
       var ctl = h('div', { class: 'ctl' });
-      var done = function (r2, okMsg) { if (r2 && r2.ok) A.renderPanel(tab); else alert((r2 && r2.error) || '실패'); };
+      var done = function (r2, okMsg) { if (r2 && r2.ok) { try { if (window.syncMaids) window.syncMaids(); if (typeof loadRooms === 'function') loadRooms(true); } catch (e) { /* 목록 갱신 실패는 무시 */ } A.renderPanel(tab); } else alert((r2 && r2.error) || '실패'); };
 
       if (a.status === 'pending' || a.status === 'rejected') {
         var sel = h('select', {}, rankOptions());
