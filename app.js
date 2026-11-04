@@ -292,7 +292,7 @@ const _preP=S.role==='admin'?_loadAdminPre():null;
 const _roomsP=loadRooms();
 if(_preP){const _ok=await _preP;if(!_ok)setTimeout(function(){if(S.role==='admin')_loadAdminPre();},5000);}
 await _roomsP;
-if(S.role==='admin')renderCheckinSync();
+if(S.role==='admin'){renderCheckinSync();renderAutoHealth();}
 hideLoad();
 _syncStart();
 }
@@ -381,6 +381,25 @@ box.innerHTML=
 (r.unknown.length?'<div class="cb-warn">기록없음(직접 확인 필요): '+names(r.unknown)+'</div>':'')+
       (r.held&&r.held.length?'<div class="cb-warn">접수 보류(연장 객실에서 체크아웃 접수됨, 확인 필요): '+names(r.held.map(function(n){return {roomNo:n};}))+'</div>':'')+
 '</details>';
+}
+async function renderAutoHealth(){
+  const box=$('autoHealthBar');
+  if(!box)return;
+  if(S.role!=='admin'){box.style.display='none';return;}
+  const r=await api({action:'getAutomationHealth'});
+  if(!r||r.ok!==true||!Array.isArray(r.items)){box.style.display='none';return;}
+  box.style.display='block';
+  const wasOpen=!!(box.querySelector('details')&&box.querySelector('details').open);
+  const bad=r.items.filter(function(i){return !i.ok;});
+  const hhmm=r.at?String(r.at).slice(11,16):'';
+  let html='<details class="cb-details"'+(wasOpen?' open':'')+'><summary><b class="cb-title">자동화 점검</b>';
+  html+='<span class="cb-sum">'+(bad.length?'<b class="warn">점검 필요 '+bad.length+'건</b>':'이상 없음')+(r.errorsToday?' · 오늘 오류 <b class="warn">'+r.errorsToday+'</b>':'')+'</span>';
+  html+='<span class="cb-flag '+(bad.length?'off':'on')+'">'+(bad.length?'⚠ 확인':'정상 '+hhmm)+'</span></summary>';
+  html+='<div class="cb-line">'+r.items.map(function(i){return (i.ok?'✔ ':'⚠ ')+esc(i.name)+(i.msg?' · '+esc(i.msg):'');}).join('<br>')+'</div>';
+  const rec=Array.isArray(r.recent)?r.recent:[];
+  if(rec.length)html+='<div class="cb-line">최근 기록<br>'+rec.slice().reverse().map(function(x){return esc(String(x.at).slice(11,16))+' '+esc(x.job)+' · '+esc(x.summary);}).join('<br>')+'</div>';
+  html+='</details>';
+  box.innerHTML=html;
 }
 async function renderCheckinSync(){
   const box=$('checkinSyncBoard');
@@ -482,7 +501,7 @@ function _syncSchedule(){
   var d=_syncFails>0?Math.min(SYNC_MS*Math.pow(2,_syncFails),SYNC_MAX_BACKOFF_MS):SYNC_MS;
   _syncTimer=setTimeout(async function(){
     if(!S.role)return;
-    if(!document.hidden){await syncNow(false);if(++_verTick%6===0){_verCheck();if(S.role==='admin')renderCheckinSync();}}
+    if(!document.hidden){await syncNow(false);if(++_verTick%6===0){_verCheck();if(S.role==='admin'){renderCheckinSync();renderAutoHealth();}}}
     _syncSchedule();
   },d);
 }
