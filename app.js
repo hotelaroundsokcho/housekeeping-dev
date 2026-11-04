@@ -592,6 +592,7 @@ const _st=r.status==='cleaned'?'inspection':r.status;
 if(tally[name][_st]!==undefined)tally[name][_st]++;
 });
 });
+try{renderTodayMaidBar(tally);}catch(e){}
 const names=Object.keys(tally);
 if(!names.length){box.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px">배정된 메이드 없음</div>';return;}
 const openNames=new Set(Array.from(box.querySelectorAll('.maid-stat-card.open')).map(c=>c.dataset.maid));
@@ -950,6 +951,7 @@ el.classList.toggle('active-filter', S.filter===filters[i] && !S.maidFilter);
 }
 
 function updateMaidStatHighlight(name){
+try{renderTodayMaidBar();}catch(e){}
 document.querySelectorAll('.maid-stat-card').forEach(c=>{
 c.classList.toggle('active-maid', !!name && c.dataset.maid===name);
 });
@@ -1465,6 +1467,57 @@ await loadRooms(true);toast('✅ 저장완료');
 }
 
 
+function renderTodayMaidBar(tally){
+  const bar=$('todayMaidBar');
+  if(!bar)return;
+  bar.style.display=S.role==='admin'?'flex':'none';
+  if(S.role!=='admin')return;
+  if(!tally){
+    tally={};
+    (S.rooms||[]).forEach(function(r){
+      if(!r.maidName)return;
+      r.maidName.split(',').map(function(n){return n.trim();}).filter(Boolean).forEach(function(n){tally[n]=(tally[n]||0)+1;});
+    });
+  }else{
+    const t2={};Object.keys(tally).forEach(function(n){t2[n]=tally[n].total;});tally=t2;
+  }
+  bar.innerHTML='';
+  const label=document.createElement('span');
+  label.textContent='오늘의 메이드:';
+  label.className='bar-label';
+  bar.appendChild(label);
+  const names=Object.keys(tally);
+  if(!names.length){
+    const em=document.createElement('span');em.className='bar-label';em.textContent='오늘 배정된 메이드가 없습니다';bar.appendChild(em);
+    return;
+  }
+  names.forEach(function(name){
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='chip maid-chip'+(S.maidFilter&&S.maidFilter.toLowerCase()===name.toLowerCase()?' on':'');
+    btn.dataset.name=name;
+    const mc=(typeof getMaidColorIdx==='function')?getMaidColorIdx(name):-1;
+    const dot=document.createElement('span');dot.className='maid-dot';
+    if(mc>=0)dot.style.background=MAID_COLORS[mc];else dot.style.background='var(--text2)';
+    const nm=document.createElement('span');nm.textContent=name;
+    const cnt=document.createElement('span');cnt.className='mc-n';cnt.textContent=tally[name]+'실';
+    btn.appendChild(dot);btn.appendChild(nm);btn.appendChild(cnt);
+    btn.title=name+' 배정 객실 '+tally[name]+'실 보기';
+    btn.addEventListener('click',function(){
+      const n=this.dataset.name;
+      if(S.maidFilter&&S.maidFilter.toLowerCase()===n.toLowerCase()){S.maidFilter='';updateMaidStatHighlight('');updateStatCardHighlight();}
+      else{S.maidFilter=n;updateMaidStatHighlight(n);document.querySelectorAll('.stat-card').forEach(function(c){c.classList.remove('active-filter');});}
+      render();
+      if(S.maidFilter){const g=$('roomsGrid');if(g&&g.scrollIntoView)g.scrollIntoView({behavior:'smooth',block:'start'});}
+    });
+    bar.appendChild(btn);
+  });
+  if(S.maidFilter){
+    const clr=document.createElement('button');clr.type='button';clr.className='chip danger';clr.textContent='전체 보기';
+    clr.addEventListener('click',function(){S.maidFilter='';updateMaidStatHighlight('');updateStatCardHighlight();render();});
+    bar.appendChild(clr);
+  }
+}
 function renderTodayInspectorBar(){
   const bar=$('todayInspectorBar');
   if(!bar)return;
@@ -1472,19 +1525,27 @@ function renderTodayInspectorBar(){
   if(S.role!=='admin')return;
   bar.innerHTML='';
   const inspectors=Array.isArray(S.maids)?S.maids:[];
+  const _lc=function(x){return String(x||'').trim().toLowerCase();};
+  const _maidSet=new Set(inspectors.map(_lc));
+  const staff=(Array.isArray(S.adminNames)?S.adminNames:[]).filter(function(n){return n&&!_maidSet.has(_lc(n));});
+  if(!S._adminLoadTried){S._adminLoadTried=true;loadAdminNames().then(function(){try{renderTodayInspectorBar();}catch(e){}});}
   const label=document.createElement('span');
   label.textContent='오늘의 인스펙터:';
   label.className='bar-label';
   bar.appendChild(label);
-  if(!inspectors.length&&S.maids!==undefined&&!S._maidsFailed){const em=document.createElement('span');em.className='bar-label';em.textContent='등록된 메이드가 없습니다';bar.appendChild(em);}
-  inspectors.forEach(function(n){
+  if(!inspectors.length&&!staff.length&&S.maids!==undefined&&!S._maidsFailed){const em=document.createElement('span');em.className='bar-label';em.textContent='등록된 메이드가 없습니다';bar.appendChild(em);}
+  const _mkChip=function(n,isStaff){
     const btn=document.createElement('button');
-    btn.textContent=n;
+    btn.type='button';
+    btn.textContent=isStaff?n+' (관리자)':n;
     btn.dataset.name=n;
-    btn.className='chip'+(S.todayInspector===n?' on':'');
+    btn.className='chip'+(_lc(S.todayInspector)===_lc(n)?' on':'');
     btn.addEventListener('click',function(){setTodayInspectorUI(this.dataset.name);});
     bar.appendChild(btn);
-  });
+  };
+  inspectors.forEach(function(n){_mkChip(n,false);});
+  if(staff.length&&inspectors.length){const s2=document.createElement('span');s2.className='bar-sep';bar.appendChild(s2);}
+  staff.forEach(function(n){_mkChip(n,true);});
   const clearBtn=document.createElement('button');
   clearBtn.textContent='해제';
   clearBtn.className='chip danger';
