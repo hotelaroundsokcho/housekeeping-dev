@@ -287,7 +287,7 @@ const el=$(id);if(el)el.style.display=S.role==='admin'?'block':'none';
 });
 const mpwBtn=$('maidPwBtn');if(mpwBtn)mpwBtn.style.display=S.role==='maid'?'block':'none';
 ['statCard0','statCard1','statCard4','statCard5'].forEach(function(id){var el=$(id);if(el)el.style.display=S.role==='admin'?'':'none';});
-applyMaidLang();showLoad(S.role==='maid'?t('loading'):'로딩 중...');
+if(S.role==='maid'&&window.ATT){try{const _att=await ATT.gate();if(_att===null)return;}catch(e){}}applyMaidLang();showLoad(S.role==='maid'?t('loading'):'로딩 중...');
 const _preP=S.role==='admin'?_loadAdminPre():null;
 const _roomsP=loadRooms();
 if(_preP){const _ok=await _preP;if(!_ok)setTimeout(function(){if(S.role==='admin')_loadAdminPre();},5000);}
