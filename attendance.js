@@ -114,9 +114,21 @@
       css();
       var root = el('div', { id: 'attGate', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'attTitle' });
       document.body.appendChild(root);
-      var st = null, err = '', busy = false, softFail = false;
+      var st = null, err = '', busy = false, softFail = false, closed = false;
 
-      function finish() { if (root.parentNode) root.parentNode.removeChild(root); inflight = null; resolve(st); }
+      function close(val) { // 게이트 제거 + 상태 초기화 (한 번만)
+        if (closed) return;
+        closed = true;
+        if (root.parentNode) root.parentNode.removeChild(root);
+        inflight = null;
+        resolve(val);
+      }
+      /* '정비 시작'/'나중에'. app.js go() 는 null 을 "로그아웃·인증 상실"로 보고 중단하므로,
+         상태를 한 번도 못 받은 채 '나중에'를 눌러도 null 이 아닌 값을 돌려준다. */
+      function finish() { close(st || { ok: false, later: true }); }
+      /* 인증 오류: api() 가 이미 세션 정리·로그인 화면 전환(AUTH.denied)을 했다.
+         게이트만 걷어내고 null 로 끝낸다 (app.js go() 는 null 이면 진행하지 않음). 여기서 logout() 을 다시 부르지 않는다. */
+      function authLost(r) { if (r && r.code === 'AUTH_REQUIRED') { close(null); return true; } return false; }
 
       function step() { // 1 출근 전 / 2 점심 미선택 / 3 완료
         if (!st || !st.checkedIn) return 1;
@@ -139,9 +151,10 @@
 
         if (err) card.appendChild(el('div', { class: 'att-err', role: 'alert', text: err }));
 
-        if (!st) { // 상태를 못 받은 경우 (서버 오류)
-          card.appendChild(el('button', { class: 'att-btn pri', type: 'button', text: bi('retry'), onclick: load }));
-          if (softFail) card.appendChild(el('button', { class: 'att-btn', type: 'button', text: bi('later'), onclick: finish }));
+        if (!st) { // 상태 조회 중이거나, 못 받은 경우 (서버 오류)
+          if (busy) card.appendChild(el('p', { class: 'att-note', role: 'status', text: bi('checking') }));
+          card.appendChild(el('button', { class: 'att-btn pri', type: 'button', text: bi('retry'), onclick: load, disabled: busy ? 'disabled' : null }));
+          if (softFail && !busy) card.appendChild(el('button', { class: 'att-btn', type: 'button', text: bi('later'), onclick: finish }));
         } else if (n === 1) {
           var late = st.lunchLocked;
           card.appendChild(el('button', { id: 'attInBtn', class: 'att-in', type: 'button', text: busy ? bi('checking') : bi('btnIn'), onclick: doCheckIn, disabled: busy ? 'disabled' : null }));
@@ -151,10 +164,10 @@
           card.appendChild(el('p', { class: 'att-note', text: bi('done') + ' · ' + t.at + ' ' + st.checkInTime }));
           card.appendChild(el('p', { class: 'att-note', style: 'color:#e8eef5;font-size:16px', text: bi('lunchQ') }));
           var row = el('div', { class: 'att-row' });
-          row.appendChild(el('button', { class: 'att-btn', type: 'button', text: bi('yes'), onclick: function () { setLunch('Y'); } }));
-          row.appendChild(el('button', { class: 'att-btn', type: 'button', text: bi('no'), onclick: function () { setLunch('N'); } }));
+          row.appendChild(el('button', { class: 'att-btn', type: 'button', text: bi('yes'), onclick: function () { setLunch('Y'); }, disabled: busy ? 'disabled' : null }));
+          row.appendChild(el('button', { class: 'att-btn', type: 'button', text: bi('no'), onclick: function () { setLunch('N'); }, disabled: busy ? 'disabled' : null }));
           card.appendChild(row);
-          card.appendChild(el('p', { class: 'att-note', text: bi('deadline') }));
+          card.appendChild(el('p', { class: 'att-note', role: busy ? 'status' : null, text: busy ? bi('checking') : bi('deadline') }));
           card.appendChild(el('button', { class: 'att-link', type: 'button', text: bi('start'), onclick: finish }));
         } else {
           card.appendChild(el('p', { class: 'att-note', text: bi('done') + ' · ' + t.at + ' ' + st.checkInTime }));
@@ -163,9 +176,9 @@
           if (st.lunchLocked) card.appendChild(el('p', { class: 'att-note', text: bi('locked') }));
           card.appendChild(el('button', { id: 'attGo', class: 'att-btn pri', type: 'button', text: bi('start'), onclick: finish }));
         }
-        card.appendChild(el('button', { class: 'att-link', type: 'button', text: bi('out'), onclick: function () { if (root.parentNode) root.parentNode.removeChild(root); inflight = null; try { logout(); } catch (e) {} resolve(null); } }));
+        card.appendChild(el('button', { class: 'att-link', type: 'button', text: bi('out'), onclick: function () { close(null); try { logout(); } catch (e) {} } }));
         root.appendChild(card);
-        var f = root.querySelector('#attInBtn') || root.querySelector('#attGo') || root.querySelector('button');
+        var f = root.querySelector('#attInBtn:not(:disabled)') || root.querySelector('#attGo') || root.querySelector('button:not(:disabled)');
         if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} }
       }
 
@@ -175,9 +188,33 @@
         err = errText(r); softFail = isSoftFail(r);
         return false;
       }
-      async function load() { busy = true; render(); var r = await call('attStatus', {}); busy = false; if (!apply(r) && r && r.code === 'AUTH_REQUIRED') return; render(); }
-      async function doCheckIn() { if (busy) return; busy = true; render(); var r = await call('attCheckIn', {}); busy = false; apply(r); render(); }
-      async function setLunch(v) { if (busy) return; busy = true; var r = await call('attSetLunch', { lunch: v }); busy = false; apply(r); render(); }
+      async function load() {
+        if (busy) return;
+        busy = true; err = ''; render();
+        var r = await call('attStatus', {});
+        busy = false;
+        if (closed) return;            // 조회 중 로그아웃 등으로 이미 닫힘
+        if (authLost(r)) return;
+        apply(r); render();
+      }
+      async function doCheckIn() {
+        if (busy) return;
+        busy = true; render();
+        var r = await call('attCheckIn', {});
+        busy = false;
+        if (closed) return;
+        if (authLost(r)) return;
+        apply(r); render();
+      }
+      async function setLunch(v) {
+        if (busy) return;
+        busy = true; render();
+        var r = await call('attSetLunch', { lunch: v });
+        busy = false;
+        if (closed) return;
+        if (authLost(r)) return;
+        apply(r); render();
+      }
 
       render();
       load();

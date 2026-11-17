@@ -29,6 +29,16 @@
   };
   A.pre = function (id, pw) { return A.sha('hk:' + String(id).toLowerCase() + ':' + pw); };
 
+  /* ── 출근 명단 연동 결과 안내 (서버 응답의 att). 연동 미설정(ATT_BOOK_ID_NOT_SET)이면 아무것도 보이지 않는다 ── */
+  function attNotice(att) {
+    if (!att || att.ok !== false || att.code === 'ATT_BOOK_ID_NOT_SET') return;
+    var msg;
+    if (att.code === 'ATT_NAME_EXISTS') msg = '출근 명단에 같은 이름의 메이드가 이미 있어 새로 만들지 않았습니다.\n같은 사람이면 목록의 \'기존 출근 명단과 연결\' 을 누르세요.\n(계정 처리는 완료되었습니다)';
+    else if (att.code === 'ATT_UNAVAILABLE') msg = '출근 시스템에 연결하지 못했습니다. 계정 처리는 완료되었습니다.\n잠시 후 목록의 \'출근 명단 연동\' 을 눌러 다시 시도하세요.';
+    else msg = '출근 명단 연동에 실패했습니다 (' + (att.code || '알 수 없음') + '). 계정 처리는 완료되었습니다.\n목록의 \'출근 명단 연동\' 으로 다시 시도하세요.';
+    alert(msg);
+  }
+
   /* ── api() 연동 (app.js 의 api 에서 호출) ── */
   A.decorate = function (p) {
     var q = Object.assign({}, p);
@@ -348,7 +358,7 @@
         fBtn.disabled = true;
         try {
           var r3 = await api({ action: 'createAccount', id: id, name: nm, role: fRole.value, maidName: fMaid.value.trim(), password: await A.pre(id, pw) });
-          if (r3 && r3.ok) { try { if (window.syncMaids) window.syncMaids(); } catch (e2) { /* 무시 */ } A.renderPanel('all'); } else { fBtn.disabled = false; alert((r3 && r3.error) || '계정 생성 실패'); }
+          if (r3 && r3.ok) { try { if (window.syncMaids) window.syncMaids(); } catch (e2) { /* 무시 */ } attNotice(r3.att); A.renderPanel('all'); } else { fBtn.disabled = false; alert((r3 && r3.error) || '계정 생성 실패'); }
         } catch (e) { fBtn.disabled = false; alert(String(e.message || e)); }
       });
       [fId, fName, fRole, fMaid, fPw, fBtn, fMsg].forEach(function (el) { addForm.appendChild(el); });
@@ -365,9 +375,9 @@
     rows.forEach(function (a) {
       var row = h('div', { class: 'auth-row' });
       row.appendChild(h('div', { class: 't', text: a.name + '  (' + a.id + ')' }));
-      row.appendChild(h('div', { class: 's', text: statusLabel(a.status) + (a.role ? ' · ' + roleLabel(a.role) : '') + (a.createdAt ? ' · 신청 ' + a.createdAt.slice(0, 16).replace('T', ' ') : '') + (a.lastLogin ? ' · 최근 ' + a.lastLogin.slice(0, 16).replace('T', ' ') : '') }));
+      row.appendChild(h('div', { class: 's', text: statusLabel(a.status) + (a.role ? ' · ' + roleLabel(a.role) : '') + (a.createdAt ? ' · 신청 ' + a.createdAt.slice(0, 16).replace('T', ' ') : '') + (a.lastLogin ? ' · 최근 ' + a.lastLogin.slice(0, 16).replace('T', ' ') : '') + (a.att ? ' · 출근명단 ' + (a.att === 'linked' ? '연동' : '미연동') : '') }));
       var ctl = h('div', { class: 'ctl' });
-      var done = function (r2, okMsg) { if (r2 && r2.ok) { try { if (window.syncMaids) window.syncMaids(); if (typeof loadRooms === 'function') loadRooms(true); } catch (e) { /* 목록 갱신 실패는 무시 */ } A.renderPanel(tab); } else alert((r2 && r2.error) || '실패'); };
+      var done = function (r2, okMsg) { if (r2 && r2.ok) { try { if (window.syncMaids) window.syncMaids(); if (typeof loadRooms === 'function') loadRooms(true); } catch (e) { /* 목록 갱신 실패는 무시 */ } attNotice(r2.att); A.renderPanel(tab); } else alert((r2 && r2.error) || '실패'); };
 
       if (a.status === 'pending' || a.status === 'rejected') {
         var sel = h('select', {}, rankOptions());
@@ -430,6 +440,16 @@
             done(await api({ action: 'deleteAccount', id: a.id }));
           } }));
         }
+      }
+      /* 출근 명단 미연동 메이드: 재시도 / 같은 이름의 기존 출근 명단과 연결 (서버가 연동 상태를 내려줄 때만 표시) */
+      if (a.role === 'maid' && a.status === 'active' && a.att === 'unlinked') {
+        ctl.appendChild(h('button', { type: 'button', class: 'auth-btn', text: '출근 명단 연동', onclick: async function () {
+          done(await api({ action: 'attSyncAccount', id: a.id }));
+        } }));
+        ctl.appendChild(h('button', { type: 'button', class: 'auth-btn', text: '기존 출근 명단과 연결', onclick: async function () {
+          if (!confirm(a.name + ' 님을 출근 명단의 같은 이름 메이드와 같은 사람으로 연결합니까?\n본인이 맞는 경우에만 진행하세요. 연결하면 기존 출근 기록이 이어집니다.')) return;
+          done(await api({ action: 'attLinkExisting', id: a.id }));
+        } }));
       }
       row.appendChild(ctl);
       holder.appendChild(row);
